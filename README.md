@@ -9,10 +9,10 @@ The GitHub repository contains all of the code associated with the project and t
 
 The data for the project are kept in a Box folder outside the GitHub repository. Non-confidential data will be made available in a public data repository upon project completion.
 
-#Project leads
+## Project leads
 Norah Eddy, TNC
 Tristin McHugh, TNC
 
-#Analyst
+## Analyst
 Joshua G. Smith, NCEAS
 
