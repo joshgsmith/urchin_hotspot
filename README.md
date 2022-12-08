@@ -11,6 +11,7 @@ The data for the project are kept in a Box folder outside the GitHub repository.
 
 ## Project leads
 Norah Eddy, TNC
+
 Tristin McHugh, TNC
 
 ## Analyst
