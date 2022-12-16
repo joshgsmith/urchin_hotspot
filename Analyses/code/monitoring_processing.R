@@ -128,7 +128,38 @@ rcca_swath2 <- rbind(rcca_swath, rcca_swath_2020)
 unique(rcca_swath2$species)
 
 write.csv(rcca_swath2, file.path(dataout, "rcca_invert_swath.csv"), row.names = FALSE)
-#
+
+
+#Urchin size
+
+View(rcca_urchin_size)
+View(rcca_urchin_size_data_2020)
+
+rcca_urchin_size1 <- rcca_urchin_size %>%
+                      dplyr::select(year, month, day, site, latitude=lat,
+                                    longitude=lon, species=classcode,
+                                    size, count=amount, depth_ft, temp10m)%>%
+                      mutate(region = ifelse(latitude >= 37.7749, "North",""))%>%
+                      filter(region == "North")%>%
+                      select(!region)
+  
+
+rcca_urchin_size2 <- rcca_urchin_size_data_2020 %>%
+                      mutate(year = format(as.Date(date_end, format="%m/%d/%Y"),"%Y"),
+                             month = format(as.Date(date_end, format="%m/%d/%Y"),"%m"),
+                             day = format(as.Date(date_end, format="%m/%d/%Y"),"%d"),
+                             depth_ft = NA,
+                             temp10m = NA)%>%
+                      dplyr::select(year, month, day, site=site_name, latitude, longitude,
+                                    species, size=test_diameter, count=amount, depth_ft,
+                                    temp10m)
+
+rcca_urchin_size_fq <- rbind(rcca_urchin_size1, rcca_urchin_size2)
+
+
+write.csv(rcca_urchin_size_fq, file.path(dataout, "rcca_urchin_size_fq.csv"), row.names = FALSE)
+
+
 
 
 
