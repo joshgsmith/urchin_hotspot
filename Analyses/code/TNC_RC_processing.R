@@ -74,8 +74,11 @@ gonad_dockside_dat <- gonad_dockside %>%
                              sand = factor(sand),
                              rocks = factor(rocks),
                              parasites = factor(parasites),
-                             sex = factor(sex))
+                             sex = factor(sex))%>%
+                        #drop wet weight outliers
+                        filter(wet_weight <= 200)
 
+hist(gonad_dockside_dat$wet_weight, breaks = 50)
 
 
 
