@@ -15,9 +15,15 @@ tabdir <- "/Users/Joshua/Box Sync/hotspot_analyses/Analyses/tables"
 ################################################################################
 #import data
 
+#------mlpa data
 mlpa_swath <- read.csv(file.path(datadir, "RC_EM_2010to2019/raw/MLPA_kelpforest_swath.4.csv"))%>%
                 janitor::clean_names()
+kelp_taxon <- read.csv(file.path(datadir, "RC_EM_2010to2019/raw/MLPA_kelpforest_taxon_table.4.csv"))%>%
+  janitor::clean_names()
+kelp_site_table <- read.csv(file.path(datadir, "RC_EM_2010to2019/raw/MLPA_kelpforest_site_table.4.csv"))%>%
+  janitor::clean_names()
 
+#------rcca annual surveys
 rcca_ab <- read.csv(file.path(datadir, "RC_EM_2010to2019/raw/RCCA_abalone_size_data.csv"))%>%
   janitor::clean_names()
 rcca_invert_swath <- read.csv(file.path(datadir, "RC_EM_2010to2019/raw/RCCA_invertebrate_swath_data.csv"))%>%
@@ -29,13 +35,91 @@ rcca_inverts_2020 <- read.csv(file.path(datadir, "RC_EM_2010to2019/raw/RCCA_Inve
 rcca_urchin_size_data_2020 <- read.csv(file.path(datadir, "RC_EM_2010to2019/raw/RCCA_urchin_size_data_2020-21.csv"))%>%
   janitor::clean_names()
 
+#-----rcca seasonal surveys
+#inverts
+rcca_seasonal_invert_fall22 <- readxl::read_xlsx(file.path(datadir, "RC_EM_2022/raw/Inverts/Inverts_TNC_fall22.xlsx"), sheet=1)%>%
+  janitor::clean_names()%>%
+  mutate(survey_type = "quarterly",
+         season = "fall")
+rcca_seasonal_invert_spring22 <- readxl::read_xlsx(file.path(datadir, "RC_EM_2022/raw/Inverts/Inverts_TNC_spring22.xlsx"), sheet=1)%>%
+  janitor::clean_names()%>%
+  mutate(survey_type = "quarterly",
+         season = "spring")
+rcca_seasonal_invert_summer22 <- readxl::read_xlsx(file.path(datadir, "RC_EM_2022/raw/Inverts/Inverts_TNC_summer22.xlsx"), sheet=1)%>%
+  janitor::clean_names()%>%
+  mutate(survey_type = "quarterly",
+         season = "summer")
+rcca_seasonal_invert_winter22 <- readxl::read_xlsx(file.path(datadir, "RC_EM_2022/raw/Inverts/Inverts_TNC_winter22.xlsx"), sheet=1)%>%
+  janitor::clean_names()%>%
+  mutate(survey_type = "quarterly",
+         season = "winter")
+
+#kelp
+rcca_seasonal_kelp_fall22 <- readxl::read_xlsx(file.path(datadir, "RC_EM_2022/raw/Kelp/Kelp_TNC_fall22.xlsx"), sheet=1)%>%
+  janitor::clean_names()%>%
+  mutate(survey_type = "quarterly",
+         season = "fall")
+rcca_seasonal_kelp_spring22 <- readxl::read_xlsx(file.path(datadir, "RC_EM_2022/raw/Kelp/Kelp_TNC_spring22.xlsx"), sheet=1)%>%
+  janitor::clean_names()%>%
+  mutate(survey_type = "quarterly",
+         season = "spring")
+rcca_seasonal_kelp_summer22 <- readxl::read_xlsx(file.path(datadir, "RC_EM_2022/raw/Kelp/Kelp_TNC_summer22.xlsx"), sheet=1)%>%
+  janitor::clean_names()%>%
+  mutate(survey_type = "quarterly",
+         season = "summer")
+rcca_seasonal_kelp_winter22 <- readxl::read_xlsx(file.path(datadir, "RC_EM_2022/raw/Kelp/Kelp_TNC_winter22.xlsx"), sheet=1)%>%
+  janitor::clean_names()%>%
+  mutate(survey_type = "quarterly",
+         season = "winter")
+
+#urchin size fq
+rcca_seasonal_urchinfq_fall22 <- readxl::read_xlsx(file.path(datadir, "RC_EM_2022/raw/Urchin Size-Frequency/Urchin_TNC_fall22.xlsx"), sheet=1)%>%
+  janitor::clean_names()%>%
+  mutate(survey_type = "quarterly",
+         season = "fall") %>%
+  data.frame()%>%
+  mutate(date_start = as.factor(date_start),
+         date_end = as.factor(date_end),
+         start_at = as.factor(start_time)) %>%
+  mutate_if(sapply(., is.character), as.factor)
+
+rcca_seasonal_urchinfq_spring22 <- readxl::read_xlsx(file.path(datadir, "RC_EM_2022/raw/Urchin Size-Frequency/Urchin_TNC_spring22.xlsx"), sheet=1)%>%
+  janitor::clean_names()%>%
+  mutate(survey_type = "quarterly",
+         season = "spring")%>%
+  data.frame()%>%
+  mutate(date_start = as.factor(date_start),
+         date_end = as.factor(date_end),
+         start_at = as.factor(start_time)) %>%
+  mutate_if(sapply(., is.character), as.factor)
+
+rcca_seasonal_urchinfq_summer22 <- read.csv(file.path(datadir, "RC_EM_2022/raw/Urchin Size-Frequency/Urchin_TNC_summer22.csv"))%>%
+  janitor::clean_names()%>%
+  mutate(survey_type = "quarterly",
+         season = "summer")%>%
+  data.frame()%>%
+  mutate(date_start = as.factor(date_start),
+         date_end = as.factor(date_end),
+         start_at = as.factor(start_time)) %>%
+  mutate_if(sapply(., is.character), as.factor)%>%
+  mutate(date_end = as.factor(format(as.Date(date_end, format="%m/%d/%Y"))))
+
+rcca_seasonal_urchinfq_winter22 <- readxl::read_xlsx(file.path(datadir, "RC_EM_2022/raw/Urchin Size-Frequency/Urchin_TNC_winter22.xlsx"), sheet=1)%>%
+  janitor::clean_names()%>%
+  mutate(survey_type = "quarterly",
+         season = "winter")%>%
+  data.frame()%>%
+  mutate(date_start = as.factor(date_start),
+         date_end = as.factor(date_end),
+         start_at = as.factor(start_time)) %>%
+  mutate_if(sapply(., is.character), as.factor)
+
+
+#-----mpa traits
 mpa_traits <- read.csv(file.path(datadir, "mpa_traits/mpa_attributes_clean.csv"))%>%
   janitor::clean_names()
 
-kelp_taxon <- read.csv(file.path(datadir, "RC_EM_2010to2019/raw/MLPA_kelpforest_taxon_table.4.csv"))%>%
-  janitor::clean_names()
-kelp_site_table <- read.csv(file.path(datadir, "RC_EM_2010to2019/raw/MLPA_kelpforest_site_table.4.csv"))%>%
-  janitor::clean_names()
+
 
 
 ################################################################################
@@ -87,7 +171,7 @@ View(kelp_swath_counts4)
 
 
 #export
-write.csv(kelp_swath_counts4, file.path(dataout, "kelp_forest_swath.csv"), row.names = FALSE)
+#write.csv(kelp_swath_counts4, file.path(dataout, "kelp_forest_swath.csv"), row.names = FALSE)
 
 ################################################################################
 #process Reef Check
@@ -127,7 +211,7 @@ rcca_swath2 <- rbind(rcca_swath, rcca_swath_2020)
 
 unique(rcca_swath2$species)
 
-write.csv(rcca_swath2, file.path(dataout, "rcca_invert_swath.csv"), row.names = FALSE)
+#write.csv(rcca_swath2, file.path(dataout, "rcca_invert_swath.csv"), row.names = FALSE)
 
 
 #Urchin size
@@ -154,10 +238,53 @@ rcca_urchin_size2 <- rcca_urchin_size_data_2020 %>%
                                     species, size=test_diameter, count=amount, depth_ft,
                                     temp10m)
 
-rcca_urchin_size_fq <- rbind(rcca_urchin_size1, rcca_urchin_size2)
+rcca_urchin_size_fq <- rbind(rcca_urchin_size1, rcca_urchin_size2) %>%
+                        mutate(survey_type = "annual",
+                               season = "summer")
+  
 
 
-write.csv(rcca_urchin_size_fq, file.path(dataout, "rcca_urchin_size_fq.csv"), row.names = FALSE)
+#write.csv(rcca_urchin_size_fq, file.path(dataout, "rcca_urchin_size_fq.csv"), row.names = FALSE)
+
+
+################################################################################
+#process Reef Check 2022 quarterly surveys 
+
+#--------------invert swath processing
+#merge datasets
+rcca_invert22 <- rbind(rcca_seasonal_invert_fall22,rcca_seasonal_invert_spring22,
+                       rcca_seasonal_invert_winter22, rcca_seasonal_invert_summer22)
+
+#write.csv(rcca_invert22, file.path(datadir, "RC_EM_2022/processed/rcca_invert_swath22.csv"), row.names = FALSE)
+
+#--------------kelp processing
+
+rcca_kelp22 <- rbind(rcca_seasonal_kelp_fall22,rcca_seasonal_kelp_spring22,
+                       rcca_seasonal_kelp_winter22, rcca_seasonal_kelp_summer22)
+
+#write.csv(rcca_kelp22, file.path(datadir, "RC_EM_2022/processed/rcca_kelp22.csv"), row.names = FALSE)
+
+#--------------urchin size frequency
+
+rcca_urchinfq22 <- rbind(rcca_seasonal_urchinfq_fall22, rcca_seasonal_urchinfq_spring22,
+                         rcca_seasonal_urchinfq_summer22, rcca_seasonal_urchinfq_winter22)%>%
+                   mutate(date_end = as.character(date_end),
+                          year = format(as.Date(date_end, format="%Y-%m-%d"),"%Y"),
+                                 month = format(as.Date(date_end, format="%Y-%m-%d"),"%m"),
+                                 day = format(as.Date(date_end, format="%Y-%m-%d"),"%d"),
+                          depth_ft = NA,
+                          temp10m = NA) %>%
+                  dplyr::select(year, month, day, site = site_name, latitude, longitude,
+                                species, size = test_diameter, count = amount, depth_ft,
+                                temp10m, survey_type, season)
+
+#write.csv(rcca_urchinfq22, file.path(datadir, "RC_EM_2022/processed/rcca_urchinsizefq22.csv"), row.names = FALSE)
+
+
+
+
+
+
 
 
 
