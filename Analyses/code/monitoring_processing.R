@@ -123,7 +123,7 @@ mpa_traits <- read.csv(file.path(datadir, "mpa_traits/mpa_attributes_clean.csv")
 
 
 ################################################################################
-#process kelp forest
+#process mlpa kelp forest
 
 #process sites
 kelp_sites <- kelp_site_table %>%
@@ -176,7 +176,7 @@ View(kelp_swath_counts4)
 ################################################################################
 #process Reef Check
 
-#invert swath
+#--------------invert swath
 View(rcca_invert_swath)
 
 #calculate transect density
@@ -214,7 +214,7 @@ unique(rcca_swath2$species)
 #write.csv(rcca_swath2, file.path(dataout, "rcca_invert_swath.csv"), row.names = FALSE)
 
 
-#Urchin size
+#--------------Urchin size frequency
 
 View(rcca_urchin_size)
 View(rcca_urchin_size_data_2020)
@@ -242,6 +242,8 @@ rcca_urchin_size_fq <- rbind(rcca_urchin_size1, rcca_urchin_size2) %>%
                         mutate(survey_type = "annual",
                                season = "summer")
   
+#--------------kelp swath
+
 
 
 #write.csv(rcca_urchin_size_fq, file.path(dataout, "rcca_urchin_size_fq.csv"), row.names = FALSE)
@@ -282,6 +284,62 @@ rcca_urchinfq22 <- rbind(rcca_seasonal_urchinfq_fall22, rcca_seasonal_urchinfq_s
 
 
 
+################################################################################
+#join RCCA quarterly and annual surveys
+
+#--------------invert swath processing
+annual_swath1 <- rcca_swath2 %>%
+                  mutate(survey_type = "annual")%>%
+                  dplyr::select(survey_type, year, month, day, site, latitude, longitude,
+                                transect, depth_ft, temp10m,  species, counts)%>%
+                  mutate(site = factor(tolower(site)),
+                         species = factor(tolower(species)),
+                         transect = factor(transect))
+qtr_swath1 <- rcca_invert22 %>%
+            mutate(date_end = as.character(date_end),
+                year = format(as.Date(date_end, format="%Y-%m-%d"),"%Y"),
+                month = format(as.Date(date_end, format="%Y-%m-%d"),"%m"),
+                day = format(as.Date(date_end, format="%Y-%m-%d"),"%d"),
+                depth_ft = NA,
+                temp10m = NA)%>%
+            dplyr::select(survey_type, year, month, day, site = site_name, latitude, longitude,
+                transect, depth_ft, temp10m,  species, counts = amount)%>%
+            mutate(site = factor(tolower(site)),
+                species = factor(tolower(species)),
+                transect = factor(transect))
+
+rcca_swath_join <- rbind(annual_swath1, qtr_swath1)                  
+
+
+#write.csv(rcca_urchinfq22, file.path(datadir, "monitoring_processed/rcca_invert_swath.csv"), row.names = FALSE)
+
+
+#--------------urchin size frequency
+
+
+annual_urch1 <- rcca_urchin_size_fq %>%
+                mutate(site = factor(tolower(site)),
+                       species = factor(species),
+                       survey_type = factor(survey_type),
+                       season = factor(season))%>%
+                dplyr::select(survey_type, season, year, month, day, 
+                               depth_ft, temp10m,
+                              everything())
+
+qtr_urch1 <- rcca_urchinfq22 %>%
+             mutate(site = factor(tolower(site)),
+                    species = factor(species),
+                    survey_type = factor(survey_type),
+                    season = factor(season))%>%
+                dplyr::select(survey_type, season, year, month, day, 
+                depth_ft, temp10m,
+                everything())
+
+rcca_urchin_sizefq <- rbind(annual_urch1, qtr_urch1) %>%
+                        mutate(site = tolower(site),
+                               species = tolower(species))
+
+#write.csv(rcca_urchin_sizefq, file.path(datadir, "monitoring_processed/rcca_urchin_sizefq.csv"), row.names = FALSE)
 
 
 
@@ -292,5 +350,4 @@ rcca_urchinfq22 <- rbind(rcca_seasonal_urchinfq_fall22, rcca_seasonal_urchinfq_s
 
 
 
-  
   
