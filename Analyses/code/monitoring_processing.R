@@ -34,6 +34,8 @@ rcca_inverts_2020 <- read.csv(file.path(datadir, "RC_EM_2010to2019/raw/RCCA_Inve
   janitor::clean_names()
 rcca_urchin_size_data_2020 <- read.csv(file.path(datadir, "RC_EM_2010to2019/raw/RCCA_urchin_size_data_2020-21.csv"))%>%
   janitor::clean_names()
+rcca_kelp_swath <- read.csv(file.path(datadir, "RC_EM_2010to2019/raw/RCCA_algae_swath_data.csv"))%>%
+  janitor::clean_names()
 
 #-----rcca seasonal surveys
 #inverts
@@ -213,6 +215,25 @@ unique(rcca_swath2$species)
 
 #write.csv(rcca_swath2, file.path(dataout, "rcca_invert_swath.csv"), row.names = FALSE)
 
+#--------------kelp swath
+rcca_kelp_swath1 <- rcca_kelp_swath %>%
+  mutate(counts_den = round(ifelse(distance < 30,
+                                     amount*(30/distance),
+                                     amount),2),
+         stipe_den = round(ifelse(distance < 30,
+                                     stipes*(30/distance),
+                                     stipes),2),
+         region = ifelse(latitude >= 37.7749, "North",""),
+         survey_type = "annual")%>%
+  filter(region == "North")%>%
+  dplyr::select(survey_type, year, month, day, site,latitude, longitude,
+                transect,depth_ft, temp10m, species=classcode,
+                counts_den, stipe_den)%>%
+  mutate(species = factor(tolower(species)),
+         site = factor(tolower(site)),
+         counts_den = ifelse(is.na(counts_den),0,counts_den),
+         stipe_den = ifelse(is.na(stipe_den),0,stipe_den))
+         
 
 #--------------Urchin size frequency
 
@@ -308,10 +329,25 @@ qtr_swath1 <- rcca_invert22 %>%
                 species = factor(tolower(species)),
                 transect = factor(transect))
 
-rcca_swath_join <- rbind(annual_swath1, qtr_swath1)                  
+rcca_swath_join <- rbind(annual_swath1, qtr_swath1) %>%
+                    mutate(survey_type = factor(survey_type),
+                           year = factor(year),
+                           month = factor(stringr::str_remove(month, "^0+")),
+                           day = factor(stringr::str_remove(day, "^0+")),
+                           restoration_site = factor(ifelse(site == "caspar south restoration" |
+                                                       site == "albion restoration"|
+                                                       site == "ocean cove kelper","yes","no")),
+                           site = recode(site, "albion restoration" = "albion cove",
+                                         "caspar south restoration" = "caspar south",
+                                         "ft ross" = "fort ross",
+                                         "ocean cove kelper" = "ocean cove",
+                                         "point arena mpa (m2)" = "point arena mpa",
+                                         "stillwater cove sonoma" = "stillwater sonoma"))%>%
+  dplyr::select(survey_type, year, month, day, restoration_site, everything())
+                           
 
 
-#write.csv(rcca_urchinfq22, file.path(datadir, "monitoring_processed/rcca_invert_swath.csv"), row.names = FALSE)
+#write.csv(rcca_swath_join, file.path(datadir, "monitoring_processed/rcca_invert_swath.csv"), row.names = FALSE)
 
 
 #--------------urchin size frequency
@@ -336,10 +372,75 @@ qtr_urch1 <- rcca_urchinfq22 %>%
                 everything())
 
 rcca_urchin_sizefq <- rbind(annual_urch1, qtr_urch1) %>%
-                        mutate(site = tolower(site),
-                               species = tolower(species))
+                        mutate(site = factor(tolower(site)),
+                               species = factor(tolower(species)),
+                               year = factor(year),
+                               month = factor(stringr::str_remove(month, "^0+")),
+                               day = factor(stringr::str_remove(day, "^0+")),
+                               site = factor(site),
+                               restoration_site = factor(ifelse(site == "caspar south restoration" |
+                                                           site == "albion restoration"|
+                                                           site == "ocean cove kelper","yes","no")),
+                               site = recode(site, "albion restoration" = "albion cove",
+                                             "caspar south restoration" = "caspar south",
+                                             "ft ross" = "fort ross",
+                                             "ocean cove kelper" = "ocean cove",
+                                             "point arena mpa (m2)" = "point arena mpa",
+                                             "stillwater cove sonoma" = "stillwater sonoma"))%>%
+                      dplyr::select(survey_type, season, year, month, day, restoration_site, everything())
+                              
 
-#write.csv(rcca_urchin_sizefq, file.path(datadir, "monitoring_processed/rcca_urchin_sizefq.csv"), row.names = FALSE)
+write.csv(rcca_urchin_sizefq, file.path(datadir, "monitoring_processed/rcca_urchin_sizefq.csv"), row.names = FALSE)
+
+
+#--------------kelp swath
+
+annual_kelp <- rcca_kelp_swath1 
+
+qtr_kelp <- rcca_kelp22 %>%
+            mutate(date_end = as.character(date_end),
+                   year = format(as.Date(date_end, format="%Y-%m-%d"),"%Y"),
+                   month = format(as.Date(date_end, format="%Y-%m-%d"),"%m"),
+                   day = format(as.Date(date_end, format="%Y-%m-%d"),"%d"),
+                   depth_ft = NA,
+                   temp10m = NA)%>%
+            dplyr::select(survey_type, year, month, day, 
+                          site = site_name, latitude, longitude, transect,
+                          depth_ft, temp10m, species, counts_den = amount,
+                          stipe_den = stipes
+                          )%>%
+            filter(!(is.na(species)))%>%
+            #note: distance is assumed to be 30m
+            mutate(survey_type = factor(survey_type),
+                   site = factor(tolower(site)),
+                   transect = factor(transect),
+                   species = factor(species),
+                   counts_den = ifelse(is.na(counts_den),0,counts_den),
+                   stipe_den = ifelse(is.na(stipe_den),0,stipe_den)
+                   )
+
+rcca_kelp_swath <- rbind(annual_kelp, qtr_kelp) %>%
+  mutate(site = factor(tolower(site)),
+         species = factor(tolower(species)),
+         year = factor(year),
+         month = factor(stringr::str_remove(month, "^0+")),
+         day = factor(stringr::str_remove(day, "^0+")),
+         site = factor(site),
+         restoration_site = factor(ifelse(site == "caspar south restoration" |
+                                            site == "albion restoration"|
+                                            site == "ocean cove kelper","yes","no")),
+         site = recode(site, "albion restoration" = "albion cove",
+                       "caspar south restoration" = "caspar south",
+                       "ft ross" = "fort ross",
+                       "ocean cove kelper" = "ocean cove",
+                       "point arena mpa (m2)" = "point arena mpa",
+                       "stillwater cove sonoma" = "stillwater sonoma"))%>%
+  dplyr::select(survey_type, year, month, day, restoration_site, everything())
+
+
+
+
+#write.csv(rcca_kelp_swath, file.path(datadir, "monitoring_processed/rcca_kelp_swath.csv"), row.names = FALSE)
 
 
 
