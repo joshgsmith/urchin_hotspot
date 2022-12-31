@@ -331,19 +331,23 @@ qtr_swath1 <- rcca_invert22 %>%
 
 rcca_swath_join <- rbind(annual_swath1, qtr_swath1) %>%
                     mutate(survey_type = factor(survey_type),
+                           site_orig = factor(site),
                            year = factor(year),
                            month = factor(stringr::str_remove(month, "^0+")),
                            day = factor(stringr::str_remove(day, "^0+")),
                            restoration_site = factor(ifelse(site == "caspar south restoration" |
-                                                       site == "albion restoration"|
-                                                       site == "ocean cove kelper","yes","no")),
-                           site = recode(site, "albion restoration" = "albion cove",
-                                         "caspar south restoration" = "caspar south",
-                                         "ft ross" = "fort ross",
-                                         "ocean cove kelper" = "ocean cove",
-                                         "point arena mpa (m2)" = "point arena mpa",
-                                         "stillwater cove sonoma" = "stillwater sonoma"))%>%
-  dplyr::select(survey_type, year, month, day, restoration_site, everything())
+                                                             site == "albion restoration"|
+                                                             site == "ocean cove kelper","yes","no")),
+                           site_new = site_orig,
+                           site_new = recode(site, "albion restoration" = "albion cove",
+                                             "caspar south restoration" = "caspar south",
+                                             "ft ross" = "fort ross",
+                                             "ocean cove kelper" = "ocean cove",
+                                             "point arena mpa (m2)" = "point arena mpa",
+                                             "stillwater cove sonoma" = "stillwater sonoma"))%>%
+  dplyr::select(!(site))%>%
+  dplyr::select(survey_type, year, month, day, restoration_site,site_orig, site_new, everything())
+
                            
 
 
@@ -372,25 +376,26 @@ qtr_urch1 <- rcca_urchinfq22 %>%
                 everything())
 
 rcca_urchin_sizefq <- rbind(annual_urch1, qtr_urch1) %>%
-                        mutate(site = factor(tolower(site)),
+                        mutate(site_orig = factor(tolower(site)),
                                species = factor(tolower(species)),
                                year = factor(year),
                                month = factor(stringr::str_remove(month, "^0+")),
                                day = factor(stringr::str_remove(day, "^0+")),
-                               site = factor(site),
                                restoration_site = factor(ifelse(site == "caspar south restoration" |
-                                                           site == "albion restoration"|
-                                                           site == "ocean cove kelper","yes","no")),
-                               site = recode(site, "albion restoration" = "albion cove",
-                                             "caspar south restoration" = "caspar south",
-                                             "ft ross" = "fort ross",
-                                             "ocean cove kelper" = "ocean cove",
-                                             "point arena mpa (m2)" = "point arena mpa",
-                                             "stillwater cove sonoma" = "stillwater sonoma"))%>%
-                      dplyr::select(survey_type, season, year, month, day, restoration_site, everything())
-                              
+                                                                  site == "albion restoration"|
+                                                                  site == "ocean cove kelper","yes","no")),
+                               site_new = site_orig,
+                               site_new = recode(site, "albion restoration" = "albion cove",
+                                                 "caspar south restoration" = "caspar south",
+                                                 "ft ross" = "fort ross",
+                                                 "ocean cove kelper" = "ocean cove",
+                                                 "point arena mpa (m2)" = "point arena mpa",
+                                                 "stillwater cove sonoma" = "stillwater sonoma"))%>%
+  dplyr::select(!(site))%>%
+  dplyr::select(survey_type, season, year, month, day, restoration_site,site_orig, site_new, everything())
 
-write.csv(rcca_urchin_sizefq, file.path(datadir, "monitoring_processed/rcca_urchin_sizefq.csv"), row.names = FALSE)
+
+#write.csv(rcca_urchin_sizefq, file.path(datadir, "monitoring_processed/rcca_urchin_sizefq.csv"), row.names = FALSE)
 
 
 #--------------kelp swath
@@ -420,24 +425,23 @@ qtr_kelp <- rcca_kelp22 %>%
                    )
 
 rcca_kelp_swath <- rbind(annual_kelp, qtr_kelp) %>%
-  mutate(site = factor(tolower(site)),
+  mutate(site_orig = factor(tolower(site)),
          species = factor(tolower(species)),
          year = factor(year),
          month = factor(stringr::str_remove(month, "^0+")),
          day = factor(stringr::str_remove(day, "^0+")),
-         site = factor(site),
          restoration_site = factor(ifelse(site == "caspar south restoration" |
                                             site == "albion restoration"|
                                             site == "ocean cove kelper","yes","no")),
-         site = recode(site, "albion restoration" = "albion cove",
+         site_new = site_orig,
+         site_new = recode(site, "albion restoration" = "albion cove",
                        "caspar south restoration" = "caspar south",
                        "ft ross" = "fort ross",
                        "ocean cove kelper" = "ocean cove",
                        "point arena mpa (m2)" = "point arena mpa",
                        "stillwater cove sonoma" = "stillwater sonoma"))%>%
-  dplyr::select(survey_type, year, month, day, restoration_site, everything())
-
-
+  dplyr::select(!(site))%>%
+  dplyr::select(survey_type, year, month, day, restoration_site,site_orig, site_new, everything())
 
 
 #write.csv(rcca_kelp_swath, file.path(datadir, "monitoring_processed/rcca_kelp_swath.csv"), row.names = FALSE)
