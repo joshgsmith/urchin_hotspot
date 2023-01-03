@@ -129,14 +129,14 @@ base_theme <-  theme(axis.text=element_text(size=7),
 g1_inset <-  ggplotGrob(
   ggplot() +
     # Plot regions
-    geom_hline(mapping=aes(yintercept=region_lats), lwd=0.4) +
+    #geom_hline(mapping=aes(yintercept=region_lats), lwd=0.4) +
     # Plot land
     geom_sf(data=foreign, fill="grey80", color="white", lwd=0.3) +
     geom_sf(data=usa, fill="grey80", color="white", lwd=0.3) +
     # Plot box
     annotate("rect", xmin=-122.6, xmax=-120.4, ymin=34.4, ymax=37.3, color="indianred1", fill=NA, lwd=0.8) +
     # Label regions
-    geom_text(data=region_labels, mapping=aes(y=lat_dd, label=region), x= -124.4, hjust=0, size=2) +
+    #geom_text(data=region_labels, mapping=aes(y=lat_dd, label=region), x= -124.4, hjust=0, size=2) +
     # Labels
     labs(x="", y="") +
     # Crop
@@ -249,6 +249,41 @@ g1_inset
 
 
 
+
+#Build inset
+g2_inset <-  ggplotGrob(
+  ggplot() +
+    # Plot regions
+    #geom_hline(mapping=aes(yintercept=region_lats), lwd=0.4) +
+    # Plot land
+    geom_sf(data=foreign, fill="grey80", color="white", lwd=0.3) +
+    geom_sf(data=usa, fill="grey80", color="white", lwd=0.3) +
+    # Plot box
+    annotate("rect", xmin=-123, xmax=-124, ymin=38.2, ymax=39.5, color="indianred1", fill=NA, lwd=0.8) +
+    # Label regions
+    #geom_text(data=region_labels, mapping=aes(y=lat_dd, label=region), x= -124.4, hjust=0, size=2) +
+    # Labels
+    labs(x="", y="") +
+    # Crop
+    coord_sf(xlim = c(-124.5, -117), ylim = c(32.5, 42)) +
+    # Theme
+    theme_bw() + base_theme +
+    theme( plot.margin = unit(rep(0, 4), "null"),
+           panel.margin = unit(rep(0, 4), "null"),
+           panel.background = element_rect(fill='transparent'), #transparent panel bg
+           # plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
+           axis.ticks = element_blank(),
+           axis.ticks.length = unit(0, "null"),
+           axis.ticks.margin = unit(0, "null"),
+           axis.text = element_blank(),
+           axis.title=element_blank())
+)
+g2_inset
+
+
+
+
+
 g2 <- ggplot() +
   # Plot state waters
   geom_sf(data=state_waters_line, color="grey60", lwd=0.1) +
@@ -289,12 +324,12 @@ g2 <- ggplot() +
   theme(axis.text.y = element_text(angle = 90, hjust = 0.5),
         axis.title=element_blank(),
         legend.position = c(0.2, 0.2), 
-        legend.key.size = unit(0.4, "cm"))
+        legend.key.size = unit(0.4, "cm"))+
   # Add inset
-  #annotation_custom(grob = g1_inset, 
-  #                  xmin = -123, 
-  #                  xmax = -122,
-  #                  ymin = 41) 
+  annotation_custom(grob = g2_inset, 
+                    xmin = -123.4, 
+                    xmax = -122.8,
+                    ymin = 39.2) 
 
 g2
 
