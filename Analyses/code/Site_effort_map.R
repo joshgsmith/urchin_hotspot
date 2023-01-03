@@ -87,12 +87,21 @@ hab_key <- expand.grid(mpa=mpa_names, habitat=habitats) %>%
 
 
 
+sites_off <- sites %>%
+              mutate(lon_adj = ifelse(
+                method == "kelp swath", longitude-0.04, 
+                ifelse(method == "size fq", longitude-0.08, longitude)))
 
-
-
+sites_label <- sites_off %>% filter(program=="rcca",
+                      method == "size fq") %>%
+    group_by(site) %>%
+    dplyr::summarize(mean_lat = mean(latitude),
+                     mean_lon = mean(lon_adj))
 
 ################################################################################
 #plot data
+
+
 
 restoration_site <- tibble(site=c("Albion", "Caspar"),
                  long_dd=c(-123.770694, -123.818565),
@@ -100,6 +109,12 @@ restoration_site <- tibble(site=c("Albion", "Caspar"),
                  #hjust=c(-0.2, 0.5, 0.5),
                  #vjust=c(0.5, -0.3, -0.3)
                  )
+
+site_avg_locations <- sites %>%
+                      group_by(program, site)%>%
+                      dplyr::summarize(mean_lon = mean(longitude),
+                                       mean_lat = mean(latitude))%>%
+                      mutate(long_adj = mean_lon - 0.15)
 
 # MPA regions
 # CA/OR, Alder Creek, Pigeon Point, Point Conception, CA/MEX 
@@ -215,41 +230,6 @@ g1
 
 
 
-#Zoom
-g1_inset <-  ggplotGrob(
-  ggplot() +
-    # Plot regions
-    geom_hline(mapping=aes(yintercept=region_lats), lwd=0.4) +
-    # Plot land
-    geom_sf(data=foreign, fill="grey80", color="white", lwd=0.3) +
-    geom_sf(data=usa, fill="grey80", color="white", lwd=0.3) +
-    # Plot box
-    annotate("rect", xmin=-122.6, xmax=-120.4, ymin=34.4, ymax=37.3, color="indianred1", fill=NA, lwd=0.8) +
-    # Label regions
-    geom_text(data=region_labels, mapping=aes(y=lat_dd, label=region), x= -124.4, hjust=0, size=2) +
-    # Labels
-    labs(x="", y="") +
-    # Crop
-    coord_sf(xlim = c(-124.5, -117), ylim = c(32.5, 42)) +
-    # Theme
-    theme_bw() + base_theme +
-    theme( plot.margin = unit(rep(0, 4), "null"),
-           panel.margin = unit(rep(0, 4), "null"),
-           panel.background = element_rect(fill='transparent'), #transparent panel bg
-           # plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
-           axis.ticks = element_blank(),
-           axis.ticks.length = unit(0, "null"),
-           axis.ticks.margin = unit(0, "null"),
-           axis.text = element_blank(),
-           axis.title=element_blank())
-)
-g1_inset
-
-
-
-
-
-
 #Build inset
 g2_inset <-  ggplotGrob(
   ggplot() +
@@ -297,19 +277,25 @@ g2 <- ggplot() +
   # ggrepel::geom_text_repel(data=mpas,
   #           mapping=aes(x=long_dd, y=lat_dd, label=name), direction="y", hjust=-0.1) +
   #plot sites
-  geom_point(data=sites %>% filter(program=="rcca",
-                                   method == "invert swath")
-             , aes(x=longitude, y=latitude, color=method, shape=program), size = 2) +
+  geom_point(data=sites_off %>% filter(program=="rcca")
+             , aes(x=lon_adj, y=latitude, color=method, shape=program), size = 2) +
   # Plot restoration sites
   geom_point(data=restoration_site, mapping=aes(x=long_dd+0.025, y=lat_dd), size=2.2) +
-  geom_text(data=restoration_site, mapping=aes(x=long_dd, y=lat_dd, label=site, hjust=-0.3, vjust=0
+  geom_text(data=restoration_site, mapping=aes(x=long_dd, y=lat_dd, label=site, hjust=-0.4, vjust=0
                                                ),
-            size=4) +
+            size=3) +
   #add county line
   geom_hline(mapping=aes(yintercept=38.768802), linetype = "dashed")+
   annotate("text",label = "Mendocino County", x= -123.2, y=38.768802+0.3, size=4)+
   annotate("text",label = "Sonoma County", x= -123.2, y=38.768802-0.08, size=4)+
   
+  #add site names
+  ggrepel::geom_text_repel(sites_label,
+                           mapping=aes(x=mean_lon-0.05, y=mean_lat, label=site), 
+                           inherit.aes = F, size=2, max.overlaps = 1000, color="black") +
+  #ggrepel::geom_text_repel(site_avg_locations %>% filter(program=="rcca"),
+  #                         mapping=aes(x=long_adj, y=mean_lat, label=site), 
+  #                       inherit.aes = F, size=2, max.overlaps = 1000, color="black") +
   # Labels
   labs(x="", y="", tag="A") +
   # Legend
@@ -318,7 +304,7 @@ g2 <- ggplot() +
   guides(color = guide_legend(order = 1), shape = guide_legend(order = 2)) +
   
   # Crop
-  coord_sf(xlim = c(-124, -123), ylim = c(38.2, 39.5)) +
+  coord_sf(xlim = c(-124.2, -123), ylim = c(38.2, 39.5)) +
   # Theme
   theme_bw() + base_theme +
   theme(axis.text.y = element_text(angle = 90, hjust = 0.5),
@@ -332,6 +318,21 @@ g2 <- ggplot() +
                     ymin = 39.2) 
 
 g2
+
+
+# Export figure
+ggsave(g2, filename=file.path(figdir, "FigX_site_locations.png"), 
+       width=5.8, height=6.5, units="in", dpi=600)
+
+
+
+
+
+sites_rcca <- sites %>%
+              filter(program=="rcca")%>%
+              distinct(site, latitude, longitude)
+
+
 
 
 
