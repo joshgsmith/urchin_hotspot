@@ -10,6 +10,7 @@ datadir <- "/Users/Joshua/Box Sync/Data"
 dataout <- "/Users/Joshua/Box Sync/Data/RC_EM_2010to2019/processed"
 figdir <- "/Users/Joshua/Box Sync/hotspot_analyses/Analyses/figures"
 tabdir <- "/Users/Joshua/Box Sync/hotspot_analyses/Analyses/tables"
+rcca_site_table <- read.csv(file.path(datadir, "site_tables/raw/rcca_site_table.csv"))
 
 
 ################################################################################
@@ -121,6 +122,10 @@ rcca_seasonal_urchinfq_winter22 <- readxl::read_xlsx(file.path(datadir, "RC_EM_2
 mpa_traits <- read.csv(file.path(datadir, "mpa_traits/mpa_attributes_clean.csv"))%>%
   janitor::clean_names()
 
+#----rcca site table
+rcca_site_table <- read.csv(file.path(datadir, "site_tables/raw/rcca_site_table.csv"))%>%
+                    mutate(site = tolower(Name))%>%
+                    dplyr::select(site, latitude_dd=Lat, longitude_dd=Long)
 
 
 
@@ -342,16 +347,33 @@ rcca_swath_join <- rbind(annual_swath1, qtr_swath1) %>%
                            site_new = recode(site, "albion restoration" = "albion cove",
                                              "caspar south restoration" = "caspar south",
                                              "ft ross" = "fort ross",
-                                             "ocean cove kelper" = "ocean cove",
                                              "point arena mpa (m2)" = "point arena mpa",
                                              "stillwater cove sonoma" = "stillwater sonoma"))%>%
   dplyr::select(!(site))%>%
-  dplyr::select(survey_type, year, month, day, restoration_site,site_orig, site_new, everything())
+  dplyr::select(survey_type, year, month, day, restoration_site,site_orig, site_new, everything()) 
 
-                           
+#check mismatch site names
+rcca_swath_join1 <- anti_join(rcca_swath_join, rcca_site_table, by=c("site_new"="site"))
 
+#fix mismatch
+rcca_swath_join2 <- rcca_swath_join %>%
+                    mutate(site_new = recode(site_new,
+                      "pyramid pt" = "pyramid point",
+                      "point arena ref" = "point arena reference",
+                      "south grestle" = "salt point",
+                      "caspar" = "caspar south",
+                      "noyo harbor" = "noyo north",
+                    )) %>%
+                    #drop Oregon sites
+                    filter(!(site_new == "macklyn cove"))
 
-#write.csv(rcca_swath_join, file.path(datadir, "monitoring_processed/rcca_invert_swath.csv"), row.names = FALSE)
+#check mismatch site names after corrections
+rcca_swath_join3 <- anti_join(rcca_swath_join2, rcca_site_table, by=c("site_new"="site"))
+
+#final join
+rcca_swath_join4 <- left_join(rcca_swath_join2, rcca_site_table,  by=c("site_new"="site"))
+
+#write.csv(rcca_swath_join4, file.path(datadir, "monitoring_processed/rcca_invert_swath.csv"), row.names = FALSE)
 
 
 #--------------urchin size frequency
@@ -388,14 +410,33 @@ rcca_urchin_sizefq <- rbind(annual_urch1, qtr_urch1) %>%
                                site_new = recode(site, "albion restoration" = "albion cove",
                                                  "caspar south restoration" = "caspar south",
                                                  "ft ross" = "fort ross",
-                                                 "ocean cove kelper" = "ocean cove",
                                                  "point arena mpa (m2)" = "point arena mpa",
                                                  "stillwater cove sonoma" = "stillwater sonoma"))%>%
   dplyr::select(!(site))%>%
   dplyr::select(survey_type, season, year, month, day, restoration_site,site_orig, site_new, everything())
 
+#check mismatch site names
+rcca_urch_join1 <- anti_join(rcca_urchin_sizefq, rcca_site_table, by=c("site_new"="site"))
 
-#write.csv(rcca_urchin_sizefq, file.path(datadir, "monitoring_processed/rcca_urchin_sizefq.csv"), row.names = FALSE)
+#fix mismatch
+rcca_urch_join2 <- rcca_urchin_sizefq %>%
+  mutate(site_new = recode(site_new,
+                           "pyramid pt" = "pyramid point",
+                           "point arena ref" = "point arena reference",
+                           "south grestle" = "salt point",
+                           "caspar" = "caspar south",
+                           "noyo harbor" = "noyo north",
+  )) %>%
+  #drop Oregon sites
+  filter(!(site_new == "macklyn cove"))
+
+#check mismatch site names after corrections
+rcca_urch_join3 <- anti_join(rcca_urch_join2, rcca_site_table, by=c("site_new"="site"))
+
+#final join
+rcca_urch_join4 <- left_join(rcca_urch_join2, rcca_site_table,  by=c("site_new"="site"))
+
+#write.csv(rcca_urch_join4, file.path(datadir, "monitoring_processed/rcca_urchin_sizefq.csv"), row.names = FALSE)
 
 
 #--------------kelp swath
@@ -437,14 +478,35 @@ rcca_kelp_swath <- rbind(annual_kelp, qtr_kelp) %>%
          site_new = recode(site, "albion restoration" = "albion cove",
                        "caspar south restoration" = "caspar south",
                        "ft ross" = "fort ross",
-                       "ocean cove kelper" = "ocean cove",
                        "point arena mpa (m2)" = "point arena mpa",
                        "stillwater cove sonoma" = "stillwater sonoma"))%>%
   dplyr::select(!(site))%>%
   dplyr::select(survey_type, year, month, day, restoration_site,site_orig, site_new, everything())
 
 
-#write.csv(rcca_kelp_swath, file.path(datadir, "monitoring_processed/rcca_kelp_swath.csv"), row.names = FALSE)
+#check mismatch site names
+rcca_kelp_join1 <- anti_join(rcca_kelp_swath, rcca_site_table, by=c("site_new"="site"))
+
+#fix mismatch
+rcca_kelp_join2 <- rcca_kelp_swath %>%
+  mutate(site_new = recode(site_new,
+                           "pyramid pt" = "pyramid point",
+                           "point arena ref" = "point arena reference",
+                           "south grestle" = "salt point",
+                           "caspar" = "caspar south",
+                           "noyo harbor" = "noyo north",
+  )) %>%
+  #drop Oregon sites
+  filter(!(site_new == "macklyn cove"))
+
+#check mismatch site names after corrections
+rcca_kelp_join3 <- anti_join(rcca_kelp_join2, rcca_site_table, by=c("site_new"="site"))
+
+#final join
+rcca_kelp_join4 <- left_join(rcca_kelp_join2, rcca_site_table,  by=c("site_new"="site"))
+
+
+#write.csv(rcca_kelp_join4, file.path(datadir, "monitoring_processed/rcca_kelp_swath.csv"), row.names = FALSE)
 
 
 
