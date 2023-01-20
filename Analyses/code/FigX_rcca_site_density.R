@@ -16,10 +16,11 @@ tabdir <- "/Users/Joshua/Box Sync/hotspot_analyses/Analyses/tables"
 sites <- readRDS(file.path(gisdir, "site_locations.Rds"))
 state_waters_poly <- readRDS(file.path(gisdir, "CA_state_waters_polygons.Rds"))
 state_waters_line <- readRDS(file.path(gisdir, "CA_state_waters_polyline.Rds"))
-mpas_orig <- readRDS(file.path(gisdir, "CA_MPA_polygons.Rds"))
+mpas_orig <- readRDS(file.path(gisdir, "CA_MPA_polygons.Rds")) %>%
+              mutate(mpa_simple = ifelse(type == "SMCA","SMCA","SMR"))
 
 #read RCCA data
-urch_den_spatial <- read.csv(file.path(datadir, "monitoring_processed/rcca_urchin_demographics.csv"))
+urch_den <- read.csv(file.path(datadir, "monitoring_processed/rcca_urchin_demographics.csv"))
 
 # Get land
 usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
@@ -44,13 +45,22 @@ region_lats_long <- c(42, 39.0, 37.18, 34.5, 32)
 region_labels <- tibble(region=paste0(c("North", "North\nCentral", "Central", "South"), "\nCoast"),
                         lat_dd=zoo::rollmean(region_lats_long, k = 2))
 
+# create site number
 
+urch_den1 <- urch_den %>%
+              filter(species == "purple urchin")%>%
+              arrange(desc(Lat))%>%
+              mutate(site_number = seq(1:nrow(.))) %>%
+              select(site_new, site_number)
+  
+urch_den_spatial <- left_join(urch_den, urch_den1, by="site_new") %>%
+                      mutate(site_name = paste(site_number, site_new))
 
 # Theme
 base_theme <-  theme(axis.text=element_text(size=5),
                      axis.title=element_text(size=6),
-                     legend.text=element_text(size=4),
-                     legend.title=element_text(size=4),
+                     legend.text=element_text(size=7),
+                     legend.title=element_text(size=8),
                      plot.tag=element_text(size=4),
                      plot.title = element_text(size=6),
                      # Gridlines
@@ -75,7 +85,8 @@ g1 <- ggplot() +
   geom_sf(data=foreign, fill="grey80", color="white", lwd=0.3) +
   geom_sf(data=usa, fill="grey80", color="white", lwd=0.3) +
   # Plot MPAs
-  geom_sf(data=mpas_orig, fill="indianred1", color="black") +
+  geom_sf(data=mpas_orig, aes(fill=mpas_orig$mpa_simple), color="black") +
+  scale_fill_manual(values = c("skyblue","indianred"))+
   # ggrepel::geom_text_repel(data=mpas,
   #           mapping=aes(x=long_dd, y=lat_dd, label=name), direction="y", hjust=-0.1) +
   #plot density
@@ -93,19 +104,26 @@ g1 <- ggplot() +
   #annotate("text",label = "Sonoma County", x= -123.2, y=38.768802-0.08, size=4)+
   
   #add site names
-  ggrepel::geom_text_repel(urch_den_spatial %>% filter(species == "purple urchin",
+  
+  geom_text(urch_den_spatial %>% filter(species == "red urchin",
                                                        region == "Humboldt") %>%
-                             mutate(Long = Long-0.04),
+                             mutate(Long = Long-0.09),
                            mapping=aes(x=Long, y=Lat, label=site_new), 
-                           inherit.aes = F, size=1.5, max.overlaps = 1000, color="black") +
+                           inherit.aes = F, size=1.5, color="black")+
+  
+  #ggrepel::geom_text_repel(urch_den_spatial %>% filter(species == "purple urchin",
+   #                                                    region == "Humboldt") %>%
+    #                         mutate(Long = Long-0.04),
+     #                      mapping=aes(x=Long, y=Lat, label=site_new), 
+      #                     inherit.aes = F, size=1.5, max.overlaps = 1000, color="black") +
   # Labels
   labs(x="", y="", tag="",legend.position="none") +
   # Legend
   scale_color_manual(name="Species", values=c( "purple", "darkred")) +
   scale_shape_manual(name="Monitoring program", values=c(16, 17)) +
-  scale_size(range = c(1,8), name="Sea urchin density")+
-  guides(color = guide_legend(order = 1), shape = guide_legend(order = 2)) +
-  
+  scale_size_binned(breaks = c(0,0.15,5.68,14.44,48.86),
+                    #labels = function(x) as.character(round(x,0)),
+                    name = "Sea urchin density \n(no. per m²)")+
   # Crop
   coord_sf(xlim = c(-124.8, -123.3), ylim = c(41, 42)) +
   # Theme
@@ -136,7 +154,8 @@ g2 <- ggplot() +
   geom_sf(data=foreign, fill="grey80", color="white", lwd=0.3) +
   geom_sf(data=usa, fill="grey80", color="white", lwd=0.3) +
   # Plot MPAs
-  geom_sf(data=mpas_orig, fill="indianred1", color="black") +
+  geom_sf(data=mpas_orig, aes(fill=mpas_orig$mpa_simple), color="black") +
+  scale_fill_manual(values = c("skyblue","indianred"))+
   # ggrepel::geom_text_repel(data=mpas,
   #           mapping=aes(x=long_dd, y=lat_dd, label=name), direction="y", hjust=-0.1) +
   #plot density
@@ -173,8 +192,8 @@ g2 <- ggplot() +
   # Legend
   scale_color_manual(name="Species", values=c( "purple", "darkred")) +
   scale_shape_manual(name="Monitoring program", values=c(16, 17)) +
-  scale_size_binned(breaks = c(2,4,10,32),
-                    labels = function(x) as.character(round(x,0)),
+  scale_size_binned(breaks = c(0,0.15,5.68,14.44,48.86),
+                    #labels = function(x) as.character(round(x,0)),
                     name = "Sea urchin density \n(no. per m²)")+
   guides(color = guide_legend(order = 1), shape = guide_legend(order = 2)) +
   
@@ -210,7 +229,8 @@ g3 <- ggplot() +
   geom_sf(data=foreign, fill="grey80", color="white", lwd=0.3) +
   geom_sf(data=usa, fill="grey80", color="white", lwd=0.3) +
   # Plot MPAs
-  geom_sf(data=mpas_orig, fill="indianred1", color="black") +
+  geom_sf(data=mpas_orig, aes(fill=mpas_orig$mpa_simple), color="black") +
+  scale_fill_manual(values = c("skyblue","indianred"))+
   # ggrepel::geom_text_repel(data=mpas,
   #           mapping=aes(x=long_dd, y=lat_dd, label=name), direction="y", hjust=-0.1) +
   #plot density
@@ -247,8 +267,8 @@ g3 <- ggplot() +
   # Legend
   scale_color_manual(name="Species", values=c( "purple", "darkred")) +
   scale_shape_manual(name="Monitoring program", values=c(16, 17)) +
-  scale_size_binned(breaks = c(2,4,10,32),
-                    labels = function(x) as.character(round(x,0)),
+  scale_size_binned(breaks = c(0,0.15,5.68,14.44,48.86),
+                    #labels = function(x) as.character(round(x,0)),
                     name = "Sea urchin density \n(no. per m²)")+
   guides(color = guide_legend(order = 1), shape = guide_legend(order = 2)) +
   
@@ -279,7 +299,8 @@ g4 <- ggplot() +
   geom_sf(data=foreign, fill="grey80", color="white", lwd=0.3) +
   geom_sf(data=usa, fill="grey80", color="white", lwd=0.3) +
   # Plot MPAs
-  geom_sf(data=mpas_orig, fill="indianred1", color="black") +
+  geom_sf(data=mpas_orig, aes(fill=mpas_orig$mpa_simple), color="black") +
+  scale_fill_manual(values = c("skyblue","indianred"))+
   # ggrepel::geom_text_repel(data=mpas,
   #           mapping=aes(x=long_dd, y=lat_dd, label=name), direction="y", hjust=-0.1) +
   #plot density
@@ -316,8 +337,8 @@ g4 <- ggplot() +
   # Legend
   scale_color_manual(name="Species", values=c( "purple", "darkred")) +
   scale_shape_manual(name="Monitoring program", values=c(16, 17)) +
-  scale_size_binned(breaks = c(2,4,10,32),
-                    labels = function(x) as.character(round(x,0)),
+  scale_size_binned(breaks = c(0,0.15,5.68,14.44,48.86),
+                    #labels = function(x) as.character(round(x,0)),
                     name = "Sea urchin density \n(no. per m²)")+
   guides(color = guide_legend(order = 1), shape = guide_legend(order = 2)) +
   
@@ -370,8 +391,8 @@ g_legend1 <- ggplot() +
   # Legend
   scale_color_manual(name="Species", values=c( "purple", "darkred")) +
   scale_shape_manual(name="Monitoring program", values=c(16, 17)) +
-  scale_size_binned(breaks = c(2,4,10,32),
-                    labels = function(x) as.character(round(x,0)),
+  scale_size_binned(breaks = c(0,0.15,5.68,14.44,48.86),
+                   # labels = function(x) as.character(round(x,0)),
                     name = "Sea urchin density \n(no. per m²)")+
   guides(color = guide_legend(order = 1), shape = guide_legend(order = 2)) +
   
@@ -394,7 +415,7 @@ g_legend2 <- ggplot() +
   # Legend
   scale_color_manual(name="Species", values=c( "purple", "darkred")) +
   scale_shape_manual(name="Monitoring program", values=c(16, 17)) +
-  scale_size_binned(breaks = c(2,4,10,32),
+  scale_size_binned(breaks = c(0.92,2.08,8.24),
                     labels = function(x) as.character(round(x,0)),
                     name = "Sea urchin density \n(no. per m²)")+
   guides(color = guide_legend(order = 1), shape = guide_legend(order = 2)) +
@@ -410,15 +431,28 @@ g_legend2 <- ggplot() +
         legend.position="bottom"
   )
 
+g_legend3 <- urch_den_spatial %>%
+  filter(species == "purple urchin")%>%
+  mutate(site_name = fct_reorder(site_name, site_number, min))%>%
+  rename("Site"=site_name)%>%
+  ggplot(aes(x=site_number, y=site_number, color=Site))+
+  geom_point()
+  
+ 
 legend1 <- get_only_legend(g_legend1)
 legend2 <- get_only_legend(g_legend2)
+legend3 <- get_only_legend(g_legend3)
 
 
 g <- gridExtra::grid.arrange(combined_plot, legend1, legend2,
                              ncol=1,
                              heights = c(10,0.5,1))
 
-g
+g_final <- gridExtra::grid.arrange(g, legend3,
+                                   ncol=2,
+                                   heights = c(10,2))
+
+g_final
 
 
 
