@@ -100,7 +100,9 @@ urch_den_spatial1 <-  left_join(urch_den_spatial, quantile_range, by=c("site_new
 urch_den_spatial2 <-  left_join(urch_den_spatial1, global_quantiles, by=c("species"))%>%
                       mutate(qntl = ifelse(m2_den < q1, "q1",
                                            ifelse(m2_den >= q1 & m2_den<= q2, "q2",
-                                                  ifelse(m2_den >= q2 & m2_den<= q3, "q3","q4"))))
+                                                  ifelse(m2_den >= q2 & m2_den<= q3, "q3","q4"))),
+                             survey = "rcca")%>%
+                      select(survey, everything())
 
 
 write.csv(urch_den_spatial2, file.path(datadir, "/monitoring_processed/rcca_urchin_demographics.csv"),row.names = FALSE)

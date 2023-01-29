@@ -68,11 +68,15 @@ density_dat_pur <- st_as_sf(urch_den_spatial, coords = c("Long","Lat"),
                             crs=4326) %>%
   filter(species == "purple urchin")
 
+density_dat_red <- st_as_sf(urch_den_spatial, coords = c("Long","Lat"),
+                            crs=4326) %>%
+  filter(species == "red urchin")
 
 ####transoform to Teale Albers
 states_T <- st_transform(states, crs = 3310)
 counties_T <- st_transform(counties, crs=3310)
 density_pur_T <- st_transform(density_dat_pur, crs=3310)
+density_red_T <- st_transform(density_dat_red, crs=3310)
 
 
 #create clipping buffer
@@ -99,7 +103,7 @@ ggplot() +
 RMSE <- function(observed, predicted) {
   sqrt(mean((predicted - observed)^2, na.rm=TRUE))
 }
-null <- RMSE(mean(density_dat_pur$m2_den), density_dat_pur$m2_den)
+null <- RMSE(mean(density_pur_T$m2_den), density_pur_T$m2_den)
 null
 
 sd(density_dat_pur$m2_den)
@@ -157,7 +161,75 @@ V <- ggplot(states_T) +
 
 
 ################################################################################
-#IDW
+#IDW purple
+
+d <- data.frame(geom(denV)[,c("x", "y")], as.data.frame(denV))
+
+gs <- gstat(formula=m2_den~1, locations=~x+y, data=d, nmax=Inf, set=list(idp=2))
+idw <- interpolate(r, gs, debug.level=0)
+idwr <- mask(idw, vr)
+plot(idwr, 1)
+
+
+# Theme
+my_theme <-  theme(axis.text=element_text(size=5),
+                     axis.title=element_text(size=6),
+                     #legend
+                     legend.text = element_text(size=4),
+                     legend.key.size = unit(0.3,'cm'),
+                     legend.title=element_text(size=5),
+                     plot.tag=element_text(size=4),
+                     plot.title = element_text(size=6),
+                     # Gridlines
+                     panel.grid.major = element_blank(), 
+                     panel.grid.minor = element_blank(),
+                     panel.background = element_blank(), 
+                     axis.line = element_line(colour = "black"),
+                     # Legend
+                     legend.key = element_rect(fill=alpha('blue', 0)),
+                     legend.background = element_rect(color=NA))
+
+
+#### plot
+idw_pur <- ggplot(states_T) + 
+  geom_spatraster(data=idwr) +  
+  scale_fill_whitebox_c(
+    palette = "muted",
+    labels = scales::label_number(#suffix = "Density",
+    )
+  )+
+  #add states
+  geom_sf(data = states_T)+
+  #add counties
+  geom_sf(data = counties_T)+
+  #add survey sites
+  geom_sf(data = density_pur_T, size=0.5)+
+  #crop
+  coord_sf(xlim = c(-124.6, -123.2), ylim = c(38.1, 42.1), crs=4326) +
+  theme_minimal()+
+  labs(fill = "Density \n(no. per m²)")+
+  ggtitle("Purple sea urchin")+
+  scale_x_continuous(breaks = c(-124, -123.5))+
+  my_theme
+  
+
+idw_pur
+
+ggpubr::ggarrange(V, idw)
+
+
+################################################################################
+#IDW red
+
+
+denV <- vect(density_red_T)
+v <- terra::voronoi(denV)
+vDen <- terra::crop(v, outer_crop)
+vDen1 <- crop(vDen, states_T)
+r <- rast(vDen1, res=500)
+
+
+
 
 d <- data.frame(geom(denV)[,c("x", "y")], as.data.frame(denV))
 
@@ -169,7 +241,7 @@ plot(idwr, 1)
 
 
 #### plot
-idw <- ggplot(states_T) + 
+idw_red <- ggplot(states_T) + 
   geom_spatraster(data=idwr) +  
   scale_fill_whitebox_c(
     palette = "muted",
@@ -180,18 +252,32 @@ idw <- ggplot(states_T) +
   geom_sf(data = states_T)+
   #add counties
   geom_sf(data = counties_T)+
-  #add survey sites
-  geom_sf(data = density_pur_T)+
+  #add sites
+  geom_sf(data = density_red_T, aes(color="species"), size=0.5)+
+  scale_color_manual(values=c("species"="black"))+
   #crop
-  coord_sf(xlim = c(-124.8, -123), ylim = c(38, 42.1), crs=4326) +
+  coord_sf(xlim = c(-124.6, -123.2), ylim = c(38.1, 42.1), crs=4326) +
+  #add survey sites
   theme_minimal()+
-  labs(fill = "Sea urchin \ndensity \n(no. per m²)")
+  labs(fill = "Density \n(no. per m²)")+
+  ggtitle("Red sea urchin") +
+  my_theme+
+  scale_x_continuous(breaks = c(-124, -123.5))
 
-idw
+idw_red
 
-ggpubr::ggarrange(V, idw)
+g <- ggpubr::ggarrange(idw_pur, idw_red)
+
+# Export figure
+ggsave(g, filename=file.path(figdir, "Rcca_urch_density__statewide_raster.png"), 
+       width=5, height=7, units="in", dpi=600, bg="white")
 
 
+
+####help links
+
+#modify palette 
+#https://www.r-bloggers.com/2022/12/hillshade-colors-and-marginal-plots-with-tidyterra-ii/
 
 ###fix projections and zoom
 #https://datascience.blog.wzb.eu/2019/04/30/zooming-in-on-maps-with-sf-and-ggplot2/
