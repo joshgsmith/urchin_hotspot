@@ -188,7 +188,7 @@ my_theme <-  theme(axis.text=element_text(size=5),
                    legend.key.size = unit(0.3,'cm'),
                    legend.title=element_text(size=5),
                    plot.tag=element_text(size=4),
-                   plot.title = element_text(size=6),
+                   plot.title = element_text(size=8),
                    # Gridlines
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
