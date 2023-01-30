@@ -214,15 +214,16 @@ g1 <- ggplot(states_T) +
   #add survey sites
   geom_sf(data = density_pur_T, aes(shape=survey), size=0.5)+
   # Crop
-  coord_sf(xlim = c(-124.8, -123.3), ylim = c(41, 42), crs=4326) +
+  coord_sf(xlim = c(-124.8, -123.3), ylim = c(41, 42.1), crs=4326) +
   theme_minimal()+
   labs(fill = "Density \n(no. per m²)")+
   ggtitle("Purple sea urchin")+
-  scale_x_continuous(breaks = c(-124, -123.5))+
+  scale_x_continuous(breaks = c(-124.5, -124.0, -123.5))+
+  #scale_x_continuous(n.breaks = 4)+
   my_theme+
   theme(legend.key = element_blank(),
-        legend.position = "none"
-        #plot.margin=unit(c(1,1,-0.5,1), "cm")
+        legend.position = "none",
+        plot.margin=unit(c(1,1,-0.5,1), "cm")
         )+
   ggtitle("Humboldt")
 
@@ -247,11 +248,11 @@ g2 <- ggplot(states_T) +
   theme_minimal()+
   labs(fill = "Density \n(no. per m²)")+
   ggtitle("Purple sea urchin")+
-  scale_x_continuous(breaks = c(-124, -123.5))+
+  #scale_x_continuous(breaks = c(-124, -123.5))+
   my_theme+
   theme(legend.key = element_blank(),
-        legend.position = "none"
-       # plot.margin=unit(c(1,1,-0.5,1), "cm")
+        legend.position = "none",
+       plot.margin=unit(c(1,1,-0.5,1), "cm")
         )+
   ggtitle("Mendocino")
 
@@ -272,15 +273,15 @@ g3 <- ggplot(states_T) +
   #add survey sites
   geom_sf(data = density_pur_T, aes(shape=survey), size=0.5)+
   # Crop
-  coord_sf(xlim = c(-123.8, -123.55), ylim = c(38.80, 39.00), crs=4326) +
+  coord_sf(xlim = c(-123.8, -123.55), ylim = c(38.80, 38.96), crs=4326) +
   theme_minimal()+
   labs(fill = "Density \n(no. per m²)")+
   ggtitle("Purple sea urchin")+
   #scale_x_continuous(breaks = c(-124, -123.5))+
   my_theme+
   theme(legend.key = element_blank(),
-        legend.position = "none"
-        #plot.margin=unit(c(-0.5,1,1,1), "cm")
+        legend.position = "none",
+        plot.margin=unit(c(-0.5,1,1,1), "cm")
         )+
   ggtitle("Point Arena")
 
@@ -305,11 +306,11 @@ g4 <- ggplot(states_T) +
   theme_minimal()+
   labs(fill = "Density \n(no. per m²)")+
   ggtitle("Purple sea urchin")+
-  scale_x_continuous(breaks = c(-124, -123.5))+
+  #scale_x_continuous(breaks = c(-124, -123.5))+
   my_theme+
   theme(legend.key = element_blank(),
-        legend.position = "none"
-        #plot.margin=unit(c(-0.5,1,1,1), "cm")
+        legend.position = "none",
+        plot.margin=unit(c(-0.5,1,1,1), "cm")
         )+
   ggtitle("Sonoma")
 
@@ -317,7 +318,8 @@ g4
 
 
 
-combined_plot <- gridExtra::grid.arrange(g1, g2, g3, g4)
+combined_plot <- gridExtra::grid.arrange(g1, g2, g3, g4
+                                         )
 
 
 get_only_legend <- function(plot) {
@@ -340,7 +342,7 @@ g_legend1 <- ggplot(states_T) +
   #add counties
   geom_sf(data = counties_T)+
   #add survey sites
-  geom_sf(data = density_pur_T, aes(shape=survey), size=0.5)+
+  geom_sf(data = density_pur_T %>% rename("Program" = survey), aes(shape=Program), size=1.5)+
   geom_spatraster(data=idwr) +  
   scale_fill_whitebox_c(
     palette = "muted",
@@ -353,8 +355,9 @@ g_legend1 <- ggplot(states_T) +
   labs(fill = "Density \n(no. per m²)")+
   ggtitle("Purple sea urchin")+
   scale_x_continuous(breaks = c(-124, -123.5))+
-  my_theme+
-  theme(legend.key = element_blank())
+  theme(legend.key = element_blank(),
+        legend.text = element_text(size=7),
+        legend.title=element_text(size=8))
 
 
 legend1 <- get_only_legend(g_legend1)
@@ -367,76 +370,5 @@ g <- gridExtra::grid.arrange(gridExtra::arrangeGrob(g1, g2, g3, g4,
 
 # Export figure
 ggsave(g, filename=file.path(figdir, "combined_purp_density_4region_raster.png"), 
-       width=7, height=8, units="in", dpi=600, bg="white")
+       width=7, height=6.5, units="in", dpi=600, bg="white")
 
-#ggpubr::ggarrange(V, idw)
-
-
-################################################################################
-#IDW red
-
-
-denV <- vect(density_red_T)
-v <- terra::voronoi(denV)
-vDen <- terra::crop(v, outer_crop)
-vDen1 <- crop(vDen, states_T)
-r <- rast(vDen1, res=500)
-vr <- rasterize(vDen1, r, "m2_den")
-
-
-d <- data.frame(geom(denV)[,c("x", "y")], as.data.frame(denV))
-
-gs <- gstat(formula=m2_den~1, locations=~x+y, data=d, nmax=Inf, set=list(idp=2))
-idw <- interpolate(r, gs, debug.level=0)
-idwr <- mask(idw, vr)
-plot(idwr, 1)
-
-
-
-#### plot
-idw_red <- ggplot(states_T) + 
-  geom_spatraster(data=idwr) +  
-  scale_fill_whitebox_c(
-    palette = "muted",
-    labels = scales::label_number(#suffix = "Density"
-    )
-  )+
-  #add states
-  geom_sf(data = states_T)+
-  #add counties
-  geom_sf(data = counties_T)+
-  #add sites
-  geom_sf(data = density_red_T, aes(shape=survey), size=0.5)+
-  #scale_color_manual(values=c("species"="black"))+
-  #crop
-  coord_sf(xlim = c(-124.6, -123.2), ylim = c(38.1, 42.1), crs=4326) +
-  #add survey sites
-  theme_minimal()+
-  labs(fill = "Density \n(no. per m²)")+
-  ggtitle("Red sea urchin") +
-  my_theme+
-  scale_x_continuous(breaks = c(-124, -123.5))+
-  theme(legend.key = element_blank())
-
-idw_red
-
-g <- ggpubr::ggarrange(idw_pur, idw_red)
-
-# Export figure
-ggsave(g, filename=file.path(figdir, "combined_urch_density_statewide_raster.png"), 
-       width=5, height=7, units="in", dpi=600, bg="white")
-
-
-
-####help links
-
-#modify palette 
-#https://www.r-bloggers.com/2022/12/hillshade-colors-and-marginal-plots-with-tidyterra-ii/
-
-###fix projections and zoom
-#https://datascience.blog.wzb.eu/2019/04/30/zooming-in-on-maps-with-sf-and-ggplot2/
-
-
-
-#####maybe need to convert terra to sf?
-#https://stackoverflow.com/questions/73825468/converting-spatvector-objects-to-data-frames-for-use-in-ggplot2
