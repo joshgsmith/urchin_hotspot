@@ -49,7 +49,7 @@ site_density <- mlpa_swath %>%
   mutate(species = recode(species, "Strongylocentrotus purpuratus" = "Purple urchin",
                                     "Mesocentrotus franciscanus" = "Red urchin")) %>%
   #calculate average site density
-  group_by(year, site, species) %>%
+  group_by(year, region, site, species) %>%
   summarize(u_transect_den = mean(count, na.rm=TRUE),
             Lat = mean(Lat),
             Long = mean(Long))
