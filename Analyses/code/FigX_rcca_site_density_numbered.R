@@ -20,7 +20,9 @@ mpas_orig <- readRDS(file.path(gisdir, "CA_MPA_polygons.Rds")) %>%
               mutate(mpa_simple = ifelse(type == "SMCA","SMCA","SMR"))
 
 #read RCCA data
-urch_den <- read.csv(file.path(datadir, "monitoring_processed/rcca_urchin_demographics.csv"))
+#urch_den <- read.csv(file.path(datadir, "monitoring_processed/rcca_urchin_demographics.csv"))
+
+urch_den <- read.csv(file.path(datadir, "monitoring_processed/mlpa_rcca_urchin_density_combined.csv"))
 
 # Get land
 usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
@@ -47,13 +49,22 @@ region_labels <- tibble(region=paste0(c("North", "North\nCentral", "Central", "S
 
 # create site number
 
-urch_den1 <- urch_den %>%
-              filter(species == "purple urchin")%>%
-              arrange(desc(Lat))%>%
-              mutate(site_number = seq(1:nrow(.))) %>%
-              select(site_new, site_number)
+
+density_mean <- urch_den %>%
+  #calculate mean after MHW
+  filter(year > 2016)%>%
+  select(survey, region, site_new, species, Lat, Long, m2_den)%>%
+  group_by(survey, region, site_new, species) %>%
+  summarise_at(vars("Lat","Long","m2_den"), mean)
+
+urch_den1 <- density_mean %>%
+  filter(species == "purple urchin")%>%
+  arrange(desc(Lat))%>%
+  ungroup()%>%
+  dplyr::mutate(site_number = row_number()) %>%
+  select(site_new, site_number)
   
-urch_den_spatial <- left_join(urch_den, urch_den1, by="site_new") %>%
+urch_den_spatial <- left_join(density_mean, urch_den1, by="site_new") %>%
                       mutate(site_name = paste(site_number, site_new))
 
 # Theme
@@ -433,22 +444,26 @@ g_legend2 <- ggplot() +
 
 g_legend3 <- urch_den_spatial %>%
   filter(species == "purple urchin")%>%
-  mutate(site_name = fct_reorder(site_name, site_number, min))%>%
+  ungroup()%>%
+  mutate(site_name= factor(site_name),
+    site_name = forcats::fct_reorder(site_name, site_number, min))%>%
   rename("Site"=site_name)%>%
   ggplot(aes(x=site_number, y=site_number, label=Site, color=Site))+
   scale_colour_manual(values=c("white","white","white","white","white","white",
                                "white","white","white","white","white","white",
                                "white","white","white","white","white","white",
                                "white","white","white","white","white","white",
-                               "white","white","white","white","white"))+
+                               "white","white","white","white","white","white",
+                               "white","white","white","white","white","white",
+                               "white","white","white"))+
   geom_point()+
   theme(plot.margin = unit(c(0, 0, 0, 0), "pt"),
         legend.key = element_rect(fill = "transparent", colour = "transparent"),
         legend.title.align = 0.5,
         legend.text=element_text(size=4),
         legend.title=element_text(size=8),
-        legend.spacing.y = unit(0.01, 'cm'),
-        legend.spacing.x = unit(0.1, 'cm'))+
+        legend.spacing.y = unit(0.001, 'cm'),
+        legend.spacing.x = unit(0.01, 'cm'))+
   guides(fill = guide_legend(byrow = TRUE))
 
 
@@ -491,7 +506,7 @@ g <- gridExtra::grid.arrange(combined_plot, legend1, legend2, legend4,
 
 g_final <- gridExtra::grid.arrange(g, legend3,
                                    ncol=2,
-                                   heights = c(10,1),
+                                   heights = c(20,0.5),
                                    widths = c(10,4))
 
 g_final
@@ -500,4 +515,4 @@ g_final
 
 # Export figure
 ggsave(g_final, filename=file.path(figdir, "Rcca_urch_density_4regions_new.png"), 
-       width=7, height=6.5, units="in", dpi=600)
+       width=7.5, height=6.5, units="in", dpi=600)
