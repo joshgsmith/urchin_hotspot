@@ -31,8 +31,10 @@ coastn83 <- st_read(file.path(datadir, "/gis_data/raw/coastn83/coastn83.shp"))
 CA_state <- st_read(file.path(datadir, "/gis_data/raw/CA_state/ca_boundary_wgs84.shp"))
 
 #read monitoring data
-urch_den <- read.csv(file.path(datadir, "monitoring_processed/mlpa_rcca_urchin_density_combined.csv"))
-urch_size <- readRDS(file.path(datadir, "/monitoring_processed/rcca_mean_density_2016-22.Rda"))
+urch_den <- read.csv(file.path(datadir, "monitoring_processed/mlpa_rcca_urchin_density_combined.csv")) %>%
+                mutate(Program = toupper(survey))
+urch_size <- readRDS(file.path(datadir, "/monitoring_processed/rcca_mean_density_2016-22.Rda"))%>%
+                mutate(Program = "RCCA")
 
 
 # Get land
@@ -63,9 +65,9 @@ counties <- map_data("county") %>%
 density_mean <- urch_den %>%
   #calculate mean after MHW
   filter(year > 2016)%>%
-  select(survey, region, site_new, species, Lat, Long, m2_den)%>%
+  select(Program, region, site_new, species, Lat, Long, m2_den)%>%
   mutate(Long = ifelse(region == "Humbodlt" | region == "Mendocino" | region == "Sonoma", Long-0.005, Long))%>%
-  group_by(survey, region, site_new, species) %>%
+  group_by(Program, region, site_new, species) %>%
   summarise_at(vars("Lat","Long","m2_den"), mean)
 
 
@@ -233,14 +235,14 @@ landmarks <- tibble(site=c("Del Norte","Humboldt","Albion", "Caspar"),
 
 
 # Theme
-my_theme <-  theme(axis.text=element_text(size=5),
-                   axis.title=element_text(size=6),
+my_theme <-  theme(axis.text=element_text(size=4),
+                   axis.title=element_text(size=5),
                    #legend
                    legend.text = element_text(size=4),
                    legend.key.size = unit(0.3,'cm'),
                    legend.title=element_text(size=5),
                    plot.tag=element_text(size=4),
-                   plot.title = element_text(size=8),
+                   plot.title = element_text(size=5),
                    # Gridlines
                    panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
@@ -262,7 +264,7 @@ d1 <- ggplot(usa) +
   #add states
   geom_sf(data = usa)+
   #add survey sites
-  geom_sf(data = density_pur_T, aes(shape=survey), size=0.5)+
+  geom_sf(data = density_pur_T, aes(shape=Program), size=0.5)+
   # label landmarks
   geom_text(data=landmarks, mapping=aes(x=Longitude, y=Latitude, label=site, hjust=-0.5, vjust=0
   ),
@@ -277,7 +279,7 @@ d1 <- ggplot(usa) +
   my_theme+
   theme(legend.key = element_blank(),
         legend.position = "right",
-        plot.margin=unit(c(1,1,-0.5,1), "cm")
+        plot.margin=unit(c(0, 0, 0, 0), "cm") 
   )+
   #add scale bar
   ggsn::scalebar(x.min = -124.8, x.max = -123.3, 
@@ -312,7 +314,7 @@ s1 <- ggplot(usa) +
   #add states
   geom_sf(data = usa)+
   #add survey sites
-  geom_sf(data = size_pur_T, size=0.5)+
+  geom_sf(data = size_pur_T, aes(shape=Program),size=0.5)+
   # label landmarks
   geom_text(data=landmarks, mapping=aes(x=Longitude, y=Latitude, label=site, hjust=-0.5, vjust=0
   ),
@@ -320,14 +322,14 @@ s1 <- ggplot(usa) +
   # Crop
   coord_sf(xlim = c(-124.8, -123.3), ylim = c(41, 42.1), crs=4326) +
   theme_minimal()+
-  labs(fill = "Density \n(no. per m²)")+
+  labs(fill = "Size difference \n (cm from mean)")+
   ggtitle("Purple sea urchin")+
   scale_x_continuous(breaks = c(-124.5, -124.0, -123.5))+
   #scale_x_continuous(n.breaks = 4)+
   my_theme+
   theme(legend.key = element_blank(),
         legend.position = "right",
-        plot.margin=unit(c(1,1,-0.5,1), "cm")
+        plot.margin=unit(c(0, 0, 0, 0), "cm") 
   )+
   #add scale bar
   ggsn::scalebar(x.min = -124.8, x.max = -123.3, 
@@ -353,10 +355,109 @@ s1
 
 
 
+d2 <- ggplot(usa) + 
+  geom_spatraster(data=idwr_den_red) +  
+  scale_fill_whitebox_c(
+    palette = "muted",
+    labels = scales::label_number(#suffix = "Density",
+    )
+  )+
+  #add states
+  geom_sf(data = usa)+
+  #add survey sites
+  geom_sf(data = density_red_T, aes(shape=Program), size=0.5)+
+  # label landmarks
+  geom_text(data=landmarks, mapping=aes(x=Longitude, y=Latitude, label=site, hjust=-0.5, vjust=0
+  ),
+  size=2) +
+  # Crop
+  coord_sf(xlim = c(-124.8, -123.3), ylim = c(41, 42.1), crs=4326) +
+  theme_minimal()+
+  labs(fill = "Density \n(no. per m²)")+
+  ggtitle("Purple sea urchin")+
+  scale_x_continuous(breaks = c(-124.5, -124.0, -123.5))+
+  #scale_x_continuous(n.breaks = 4)+
+  my_theme+
+  theme(legend.key = element_blank(),
+        legend.position = "right",
+        plot.margin=unit(c(0, 0, 0, 0), "cm") 
+  )+
+  #add scale bar
+  ggsn::scalebar(x.min = -124.8, x.max = -123.3, 
+                 y.min = 41, y.max = 42.1,
+                 #anchor=c(x=-124.7,y=41),
+                 location="bottomleft",
+                 dist = 5, dist_unit = "km",
+                 transform=TRUE, 
+                 model = "WGS84",
+                 st.dist=0.02,
+                 st.size=1,
+                 border.size=.5,
+                 height=.01
+  )+
+  #add northing arrow
+  north(x.min = -124.8, x.max = -123.3, 
+        y.min = 41, y.max = 42.1,
+        location = "topright", 
+        scale = 0.05, symbol = 10)+
+  ggtitle("Red sea urchin density")
+
+d2
 
 
+s2 <- ggplot(usa) + 
+  geom_spatraster(data=idwr_size_red) +  
+  scale_fill_whitebox_c(
+    palette = "muted",
+    labels = scales::label_number(#suffix = "Density",
+    )
+  )+
+  #add states
+  geom_sf(data = usa)+
+  #add survey sites
+  geom_sf(data = size_red_T, aes(shape=Program), size=0.5)+
+  # label landmarks
+  geom_text(data=landmarks, mapping=aes(x=Longitude, y=Latitude, label=site, hjust=-0.5, vjust=0
+  ),
+  size=2) +
+  # Crop
+  coord_sf(xlim = c(-124.8, -123.3), ylim = c(41, 42.1), crs=4326) +
+  theme_minimal()+
+  labs(fill = "Size difference \n (cm from mean)")+
+  scale_x_continuous(breaks = c(-124.5, -124.0, -123.5))+
+  #scale_x_continuous(n.breaks = 4)+
+  my_theme+
+  theme(legend.key = element_blank(),
+        legend.position = "right",
+        plot.margin=unit(c(0, 0, 0, 0), "cm") 
+  )+
+  #add scale bar
+  ggsn::scalebar(x.min = -124.8, x.max = -123.3, 
+                 y.min = 41, y.max = 42.1,
+                 #anchor=c(x=-124.7,y=41),
+                 location="bottomleft",
+                 dist = 5, dist_unit = "km",
+                 transform=TRUE, 
+                 model = "WGS84",
+                 st.dist=0.02,
+                 st.size=1,
+                 border.size=.5,
+                 height=.01
+  )+
+  #add northing arrow
+  north(x.min = -124.8, x.max = -123.3, 
+        y.min = 41, y.max = 42.1,
+        location = "topright", 
+        scale = 0.05, symbol = 10)+
+  ggtitle("Red sea urchin size (cm from mean)")
 
+s2
 
+g <- cowplot::plot_grid(d1, s1, d2, s2, align = "v", nrow = 2, rel_heights = c(1/1.5, 1/1.5, 1/1.5,1/1.5))
+
+# Export figure
+ggsave(g, filename=file.path(figdir, "combined_density_size_Humboldt.png"), 
+       width=7, height=6, units="in", dpi=600, bg="white")
 
 
 
