@@ -12,6 +12,8 @@ require(Metrics)
 require(terra)
 require(tidyterra)
 require(gstat)
+require(gghighlight)
+require(stringr)
 
 #set directories
 datadir <- "/Users/Joshua/Box Sync/Data"
@@ -91,9 +93,9 @@ my_theme <-  theme(axis.text=element_text(size=7),
                    plot.tag=element_blank(), #element_text(size=8),
                    plot.title =element_text(size=8, face="bold"),
                    # Gridlines
-                   panel.grid.major = element_blank(), 
+                   #panel.grid.major = element_blank(), 
                    panel.grid.minor = element_blank(),
-                   panel.background = element_blank(), 
+                   #panel.background = element_blank(), 
                    axis.line = element_line(colour = "black"),
                    # Legend
                    legend.key = element_blank(),
@@ -107,37 +109,60 @@ my_theme <-  theme(axis.text=element_text(size=7),
 g1 <- urch_dat_new %>%
   filter(survey == "rcca")%>%
   ggplot(aes(x=year, y=m2_den, color=species))+
-  geom_point()+
-  geom_line()+
+  geom_line(color="grey", aes(group=species)) +
+  theme_minimal() +
+  geom_smooth(method="auto", se=F, size=0.5, aes(group=species, color=species)) +
   scale_color_manual(values=c("purple","red"))+
   scale_y_continuous(limits=c(0,40))+
   scale_x_continuous(breaks = c(2008, 2012, 2016, 2020))+
-  facet_wrap(region~site_new)+
-  my_theme+
   labs(y="Density (no. per m²)")+
-  ggtitle("RCCA surveys")
+  ggtitle("RCCA surveys")+
+  facet_wrap(region~site_new)+
+  my_theme
+
+
+#g1 <- urch_dat_new %>%
+#  filter(survey == "rcca")%>%
+#  ggplot(aes(x=year, y=m2_den, color=species))+
+#  geom_point()+
+#  geom_line()+
+#  scale_color_manual(values=c("purple","red"))+
+#  scale_y_continuous(limits=c(0,40))+
+#  scale_x_continuous(breaks = c(2008, 2012, 2016, 2020))+
+#  facet_wrap(region~site_new)+
+#  my_theme+
+#  labs(y="Density (no. per m²)")+
+#  ggtitle("RCCA surveys")
 
 
 # Export figure
-ggsave(g1, filename=file.path(figdir, "Rcca_sitedensity_timerseries.png"), 
-       width=10, height=7, units="in", dpi=600)
+ggsave(g1, filename=file.path(figdir, "Fig2_Rcca_sitedensity_timerseries.png"), 
+       width=10, height=7, units="in", dpi=600, bg="white")
 
 
 
-g2 <- urch_dat_new %>%
+mlpa_dat<- urch_dat_new %>%
   filter(survey == "mlpa")%>%
+  mutate(site_new1 = word(site_new, 1  , -2),
+         site_type = toupper(word(site_new, -1)),
+         site_type1 = paste0("(",site_type,")"),
+         site_new = paste(site_new1,site_type1)) 
+
+
+g2 <- mlpa_dat %>%
   ggplot(aes(x=year, y=m2_den, color=species))+
-  geom_point()+
-  geom_line()+
+  geom_line(color="grey", aes(group=species)) +
+  theme_minimal() +
+  geom_smooth(method="auto", se=F, size=0.5, aes(group=species, color=species)) +
   scale_color_manual(values=c("purple","red"))+
   scale_y_continuous(limits=c(0,40))+
-  facet_wrap(region~site_new)+
   scale_x_continuous(breaks = c(2008, 2012, 2016, 2020))+
-  my_theme+
   labs(y="Density (no. per m²)")+
-  ggtitle("MLPA surveys")
+  ggtitle("MLPA surveys")+
+  facet_wrap(region~site_new)+
+  my_theme
 
-ggsave(g2, filename=file.path(figdir, "Mlpa_sitedensity_timerseries.png"), 
+ggsave(g2, filename=file.path(figdir, "Fig3_mlpa_sitedensity_timerseries.png"), 
        width=10, height=7, units="in", dpi=600)
 
 

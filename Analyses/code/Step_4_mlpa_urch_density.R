@@ -30,7 +30,7 @@ mlpa_swath <- read.csv(file.path(datadir, "monitoring_processed/mlpa_swath.csv")
                                          Lat > 38.8, "Point Arena",
                                        ifelse(Lat < 38.8 &
                                                 Lat > 38.5, "Sonoma",Lat))))) %>%
-  select(year, site, "region" = region4, Lat, Long, transect, species, count, size)
+  select(year, site, region, Lat, Long, transect, species, count, size)
 
 # Get land
 usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
