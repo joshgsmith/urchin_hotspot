@@ -22,7 +22,11 @@ mpas_orig <- readRDS(file.path(gisdir, "CA_MPA_polygons.Rds")) %>%
 #read RCCA data
 #urch_den <- read.csv(file.path(datadir, "monitoring_processed/rcca_urchin_demographics.csv"))
 
-urch_den <- read.csv(file.path(datadir, "monitoring_processed/mlpa_rcca_urchin_density_combined.csv"))
+urch_den <- read.csv(file.path(datadir, "monitoring_processed/mlpa_rcca_urchin_density_combined.csv")) %>%
+  mutate(site_new1 = ifelse(survey=="mlpa", word(site_new, 1  , -2), site_new),
+         site_type = ifelse(survey=="mlpa", toupper(word(site_new, -1)), site_new),
+         site_type1 = ifelse(survey=="mlpa", paste0("(",site_type,")"), ""),
+         site_new = ifelse(survey=="mlpa", paste(site_new1,site_type1), site_new)) 
 
 # Get land
 usa <- rnaturalearth::ne_states(country="United States of America", returnclass = "sf")
@@ -514,5 +518,5 @@ g_final
 
 
 # Export figure
-ggsave(g_final, filename=file.path(figdir, "Rcca_urch_density_4regions_new.png"), 
+ggsave(g_final, filename=file.path(figdir, "Figure4_density_percentile.png"), 
        width=7.5, height=6.5, units="in", dpi=600)
