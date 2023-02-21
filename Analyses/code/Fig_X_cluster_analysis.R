@@ -138,12 +138,12 @@ urch_purp_dat$cluster <- as.factor(k_mean_purp$cluster)
 
 
 ###############################################################################
-#plot size and density by cluster
+#plot size and density by cluster for purple urchins
 
 plot_dat1 <- urch_purp_dat %>% pivot_longer(cols=c(u_den, u_size), names_to="variable", values_to="value") %>%
-                  mutate(clust_order = ifelse(cluster == "3","Cluster 1",
-                                              ifelse(cluster=="2","Cluster 3",
-                                                     ifelse(cluster=="1","Cluster 2","Cluster 4"))))
+                  mutate(clust_order =  ifelse(cluster == "2","Cluster 1",
+                                              ifelse(cluster=="3","Cluster 2",
+                                                    ifelse(cluster=="4","Cluster 3","Cluster 4"))))
 
 size_error <- plot_dat1 %>% filter(variable == "u_size") %>% select(site_new, "se" = se_size) %>% mutate(variable = "u_size")
 den_error <- plot_dat1 %>% filter(variable == "u_den") %>% select(site_new, "se" = se_den) %>% mutate(variable = "u_den")
@@ -151,7 +151,13 @@ error_dat <- rbind(size_error, den_error)
 
 plot_dat <- left_join(plot_dat1, error_dat, by=c("site_new","variable")) %>%
                       mutate(variable = recode(variable, "u_den" = "Density", 
-                                               "u_size" = "Size"))
+                                               "u_size" = "Size")) %>%
+                      filter(!(site_new == "Ocean cove kelper")) %>%
+                      #add restoration sites
+                      mutate(restoration_site = ifelse(site_new == "Noyo north" |
+                                                         site_new == "Caspar north" |
+                                                         site_new == "Caspar south" |
+                                                         site_new == "Albion cove","*",""))
 
 
 
@@ -172,30 +178,120 @@ my_theme <-  theme(axis.text=element_text(size=8),
                    legend.key = element_rect(fill=alpha('blue', 0)),
                    legend.background = element_rect(color=NA))
 
+den_max <- plot_dat %>% filter(variable == "Density")
+size_max <- plot_dat %>% filter(variable == "Size")
+scaleFactor <- (max(den_max$value) / max(size_max$value))*.75
 
 
-g1 <- ggplot(plot_dat, aes(site_new, value, fill=variable))+
+g1 <- ggplot(plot_dat %>%
+              mutate(value = ifelse(variable == "Size",value*scaleFactor, value))
+             , aes(site_new, value, fill=variable))+
   geom_bar(stat="identity", position = position_dodge())+
   geom_errorbar(aes(ymin=value-se, ymax=value+se), position=position_dodge(width=0.9), width=0.2)+
-  #geom_text(aes(label = site_new), stat = "identity", vjust =0.5, hjust=-0.1, angle=90, colour = "black", size=2,
-  #          data=plot_dat %>% filter(variable=="u_den") %>%
-   #           mutate(value = ifelse(value <5 ,5,value)))+
-  #geom_smooth(method="auto", color="purple",se=F, linewidth=0.5)+
+  #add restoration site
+  geom_text(data=plot_dat %>% filter(variable == "Size"),aes(x = site_new, y=scaleFactor*(value+se), label=restoration_site), size=7)+
   theme_minimal()+
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))+
-  scale_y_continuous(limits=c(0,50))+
+  scale_y_continuous(  breaks = seq(0,45, by=5),
+                     sec.axis = sec_axis( trans=~./scaleFactor, name="Size (cm)")
+   )+
+  #add minimum harvestable size
+  geom_hline(yintercept = scaleFactor*4, color="purple", linetype="dashed", linewidth=0.75)+
+  #add threshold density
+  geom_hline(yintercept = 8, color="darkgreen", linetype="dashed", linewidth=0.75)+
   scale_fill_brewer(palette = "Accent")+
-  labs(x="Site", y="Density (no. per m²) or size (cm)")+
+  labs(x="Site", y="Density (no. per m²)")+
   guides(fill=guide_legend(title="Variable"))+
   facet_wrap(~clust_order, scales="free_x")+
   ggtitle("Purple sea urchin")+
   my_theme
-  
+
+g1
 
 
-ggsave(g1, filename=file.path(figdir, "FigX_cluster_purp.png"), 
+ggsave(g1, filename=file.path(figdir, "Fig12_cluster_purp.png"), 
        width=7, height=7, units="in", dpi=600, bg="white")
 
+
+
+###############################################################################
+#plot size and density by cluster for red urchins
+
+plot_dat1 <- urch_red_dat %>% pivot_longer(cols=c(u_den, u_size), names_to="variable", values_to="value") %>%
+  mutate(clust_order =  ifelse(cluster == "2","Cluster 1",
+                               ifelse(cluster=="1","Cluster 3",
+                                      ifelse(cluster=="3","Cluster 2",
+                                             ifelse(cluster=="5","Cluster 5",
+                                                    ifelse(cluster=="6","Cluster 6",
+                                                           ifelse(cluster=="7","Cluster 4",
+                                      ifelse(cluster=="4","Cluster 7","Cluster 8"))))))))
+
+size_error <- plot_dat1 %>% filter(variable == "u_size") %>% select(site_new, "se" = se_size) %>% mutate(variable = "u_size")
+den_error <- plot_dat1 %>% filter(variable == "u_den") %>% select(site_new, "se" = se_den) %>% mutate(variable = "u_den")
+error_dat <- rbind(size_error, den_error) 
+
+plot_dat <- left_join(plot_dat1, error_dat, by=c("site_new","variable")) %>%
+  mutate(variable = recode(variable, "u_den" = "Density", 
+                           "u_size" = "Size")) %>%
+  filter(!(site_new == "Ocean cove kelper")) %>%
+  #add restoration sites
+  mutate(restoration_site = ifelse(site_new == "Noyo north" |
+                                     site_new == "Caspar north" |
+                                     site_new == "Caspar south" |
+                                     site_new == "Albion cove","*",""))
+
+
+
+my_theme <-  theme(axis.text=element_text(size=8),
+                   axis.title=element_text(size=10),
+                   #legend
+                   legend.text = element_text(size=8),
+                   legend.key.size = unit(0.3,'cm'),
+                   legend.title=element_text(size=10),
+                   plot.tag=element_text(size=8),
+                   plot.title = element_text(size=10),
+                   # Gridlines
+                   panel.grid.major = element_blank(), 
+                   panel.grid.minor = element_blank(),
+                   panel.background = element_blank(), 
+                   axis.line = element_line(colour = "black"),
+                   # Legend
+                   legend.key = element_rect(fill=alpha('blue', 0)),
+                   legend.background = element_rect(color=NA))
+
+den_max <- plot_dat %>% filter(variable == "Density")
+size_max <- plot_dat %>% filter(variable == "Size")
+scaleFactor <- (max(den_max$value) / max(size_max$value))*.9
+
+
+g2 <- ggplot(plot_dat %>%
+               mutate(value = ifelse(variable == "Size",value*scaleFactor, value))
+             , aes(site_new, value, fill=variable))+
+  geom_bar(stat="identity", position = position_dodge())+
+  geom_errorbar(aes(ymin=value-se, ymax=value+se), position=position_dodge(width=0.9), width=0.2)+
+  #add restoration site
+  geom_text(data=plot_dat %>% filter(variable == "Size"),aes(x = site_new, y=scaleFactor*(value+se+2), label=restoration_site), size=7)+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))+
+  scale_y_continuous(  breaks = seq(0,4, by=1),
+                       sec.axis = sec_axis( trans=~./scaleFactor, name="Size (cm)")
+  )+
+  #add minimum harvestable size
+  geom_hline(yintercept = scaleFactor*8, color="darkorange", linetype="dashed", linewidth=0.75)+
+  #add threshold density
+  geom_hline(yintercept = 2, color="darkgreen", linetype="dashed", linewidth=0.75)+
+  scale_fill_brewer(palette = "Dark2")+
+  labs(x="Site", y="Density (no. per m²)")+
+  guides(fill=guide_legend(title="Variable"))+
+  facet_wrap(~clust_order, scales="free_x")+
+  ggtitle("Red sea urchin")+
+  my_theme
+
+g2
+
+
+ggsave(g2, filename=file.path(figdir, "Fig13_cluster_red.png"), 
+       width=7, height=7, units="in", dpi=600, bg="white")
 
 
 
