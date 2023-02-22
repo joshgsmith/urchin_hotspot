@@ -147,7 +147,7 @@ g1 <- ggplot() +
   # ggrepel::geom_text_repel(data=mpas,
   #           mapping=aes(x=long_dd, y=lat_dd, label=name), direction="y", hjust=-0.1) +
   #plot sites
-  geom_point(data=sites_off %>% filter(program=="rcca")
+  geom_point(data=sites_off # %>% filter(program=="rcca")
              , aes(x=mean_lon, y=mean_lat, color=method, shape=program), size = 2) +
   # Plot restoration sites
   #geom_point(data=restoration_site, mapping=aes(x=long_dd+0.025, y=lat_dd), size=2.2) +
@@ -191,8 +191,10 @@ g1 <- ggplot() +
 g1
 
 
+
+
 # Export figure
-ggsave(g1, filename=file.path(figdir, "FigX_site_locations.png"), 
+ggsave(g1, filename=file.path(figdir, "Fig1_site_locations.png"), 
        width=5.8, height=6.5, units="in", dpi=600)
 
 
