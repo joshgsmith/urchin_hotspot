@@ -27,6 +27,13 @@ urch_den <- read.csv(file.path(datadir, "monitoring_processed/mlpa_rcca_urchin_d
                      mutate(region = ifelse(site_new == "Saunders reef smca ref","Point Arena",region))
 
 ################################################################################
+#Density summary
+
+den_sum <- urch_den %>% group_by(species) %>%
+              summarize(u_den = mean(m2_den),
+                        sd = sd(m2_den))
+
+################################################################################
 #Plot density
 
 # Theme

@@ -296,7 +296,113 @@ ggsave(g2, filename=file.path(figdir, "Fig13_cluster_red.png"),
 
 
 
+###############################################################################
+#size to density ratio
 
+plot_dat1 <- urch_purp_dat %>% pivot_longer(cols=c(u_den, u_size), names_to="variable", values_to="value") %>%
+  mutate(clust_order =  ifelse(cluster == "2","Cluster 1",
+                               ifelse(cluster=="3","Cluster 2",
+                                      ifelse(cluster=="4","Cluster 3","Cluster 4"))))
+
+size_error <- plot_dat1 %>% filter(variable == "u_size") %>% select(site_new, "se" = se_size) %>% mutate(variable = "u_size")
+den_error <- plot_dat1 %>% filter(variable == "u_den") %>% select(site_new, "se" = se_den) %>% mutate(variable = "u_den")
+error_dat <- rbind(size_error, den_error) 
+
+plot_dat <- left_join(plot_dat1, error_dat, by=c("site_new","variable")) %>%
+  mutate(variable = recode(variable, "u_den" = "Density", 
+                           "u_size" = "Size")) %>%
+  filter(!(site_new == "Ocean cove kelper")) %>%
+  #add restoration sites
+  mutate(restoration_site = ifelse(site_new == "Noyo north" |
+                                     site_new == "Caspar north" |
+                                     site_new == "Caspar south" |
+                                     site_new == "Albion cove","*",""),
+         species = "Purple urchin") 
+
+
+plot_dat1 <- urch_red_dat %>% pivot_longer(cols=c(u_den, u_size), names_to="variable", values_to="value") %>%
+  mutate(clust_order =  ifelse(cluster == "2","Cluster 1",
+                               ifelse(cluster=="1","Cluster 3",
+                                      ifelse(cluster=="3","Cluster 2",
+                                             ifelse(cluster=="5","Cluster 5",
+                                                    ifelse(cluster=="6","Cluster 6",
+                                                           ifelse(cluster=="7","Cluster 4",
+                                                                  ifelse(cluster=="4","Cluster 7","Cluster 8"))))))))
+
+size_error <- plot_dat1 %>% filter(variable == "u_size") %>% select(site_new, "se" = se_size) %>% mutate(variable = "u_size")
+den_error <- plot_dat1 %>% filter(variable == "u_den") %>% select(site_new, "se" = se_den) %>% mutate(variable = "u_den")
+error_dat <- rbind(size_error, den_error) 
+
+plot_dat_red <- left_join(plot_dat1, error_dat, by=c("site_new","variable")) %>%
+  mutate(variable = recode(variable, "u_den" = "Density", 
+                           "u_size" = "Size")) %>%
+  filter(!(site_new == "Ocean cove kelper")) %>%
+  #add restoration sites
+  mutate(restoration_site = ifelse(site_new == "Noyo north" |
+                                     site_new == "Caspar north" |
+                                     site_new == "Caspar south" |
+                                     site_new == "Albion cove","*",""),
+         species = "red urchin")
+
+cluster_dat <- rbind(plot_dat, plot_dat_red) %>%
+                  dplyr::select(Site=site_new, variable, value, species)
+                
+#calculate ratio
+ratio_dat <- cluster_dat %>% pivot_wider(names_from = variable) %>%
+                mutate(RR = log(Size/Density),
+                       Size = round(Size, 2),
+                       Density= round(Density,2))
+
+
+####Plot
+my_theme <-  theme(axis.text=element_text(size=8),
+                   axis.title=element_text(size=10),
+                   #legend
+                   legend.text = element_text(size=8),
+                   legend.key.size = unit(0.3,'cm'),
+                   legend.title=element_text(size=10),
+                   plot.tag=element_text(size=8),
+                   plot.title = element_text(size=10),
+                   # Gridlines
+                   panel.grid.major = element_blank(), 
+                   panel.grid.minor = element_blank(),
+                   panel.background = element_blank(), 
+                   axis.line = element_line(colour = "black"),
+                   # Legend
+                   legend.key = element_rect(fill=alpha('blue', 0)),
+                   legend.background = element_rect(color=NA))
+
+p <- ggplot(ratio_dat %>% filter(species =="Purple urchin"), aes(x = RR, y=reorder(Site, RR)))+
+  geom_point(color="purple", size=3)+
+  geom_vline(xintercept=0, linetype="dashed", color="grey",alpha=0.6)+
+  geom_text(aes(label = paste("Size:",Size, "cm"), hjust=-0.09, vjust=0.05), size=3)+
+  geom_text(aes(label = paste("Density:",Density), hjust=-0.09, vjust=1.5), size=3)+
+  scale_x_continuous(limits=c(-2,3))+
+  labs(x="Response ratio log(Size/Density)",
+       y="Site",
+       title="Purple sea urchin")+
+  my_theme
+
+
+r <- ggplot(ratio_dat %>% filter(species =="red urchin"), aes(x = RR, y=reorder(Site, RR)))+
+  geom_point(color="red", size=3)+
+  geom_vline(xintercept=0, linetype="dashed", color="grey",alpha=0.6)+
+  geom_text(aes(label = paste("Size:",Size, "cm"), hjust=-0.09, vjust=0.05), size=3)+
+  geom_text(aes(label = paste("Density:",Density), hjust=-0.09, vjust=1.5), size=3)+
+  scale_x_continuous(limits=c(-1,4))+
+  labs(x="Response ratio log(Size/Density)",
+       y="Site",
+       title="Red sea urchin")+
+  my_theme
+
+
+
+g <- ggpubr::ggarrange(p, r)
+
+
+
+ggsave(g, filename=file.path(figdir, "Fig14_response_ratio.png"), 
+       width=10, height=8, units="in", dpi=600, bg="white")
 
 
 
