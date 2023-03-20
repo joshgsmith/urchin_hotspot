@@ -27,7 +27,7 @@ rcca_size_raw <-  read.csv(file.path(datadir, "monitoring_processed/rcca_urchin_
 
 
 #examine data using gghighlight
-ggplot(urch_purp, aes(year, m2_den, color=site_new))+
+ggplot(urch_den, aes(year, m2_den, color=site_new))+
   geom_line(stat="identity")+
   ylab("Purple sea urchin density")+
   gghighlight(mean(m2_den) > 15,
@@ -198,7 +198,7 @@ g1 <- ggplot(plot_dat %>%
   #add minimum harvestable size
   geom_hline(yintercept = scaleFactor*4, color="purple", linetype="dashed", linewidth=0.75)+
   #add threshold density
-  geom_hline(yintercept = 8, color="darkgreen", linetype="dashed", linewidth=0.75)+
+  geom_hline(yintercept = 4, color="darkgreen", linetype="dashed", linewidth=0.75)+
   scale_fill_brewer(palette = "Accent")+
   labs(x="Site", y="Density (no. per m²)")+
   guides(fill=guide_legend(title="Variable"))+
@@ -209,7 +209,7 @@ g1 <- ggplot(plot_dat %>%
 g1
 
 
-ggsave(g1, filename=file.path(figdir, "Fig12_cluster_purp.png"), 
+ggsave(g1, filename=file.path(figdir, "Fig11_cluster_purp.png"), 
        width=7, height=7, units="in", dpi=600, bg="white")
 
 
